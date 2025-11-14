@@ -1,4 +1,12 @@
 import { lazy } from 'react';
+import type { RouteObject } from 'react-router-dom';
+import React from 'react';
+
+// Types
+type RouteConfig = Omit<RouteObject, 'children'> & {
+  children?: RouteConfig[];
+  role?: string;
+};
 
 // Layouts
 const PublicLayout = lazy(() => import('../layouts/PublicLayout'));
@@ -47,92 +55,115 @@ const ClientBookings = lazy(() => import('../Pages/dashboards/client/ClientBooki
 const ClientProfile = lazy(() => import('../Pages/dashboards/client/ClientProfile'));
 const ClientSettings = lazy(() => import('../Pages/dashboards/client/ClientSettings'));
 
-export const publicRoutes = [
-  {
+// Fonction utilitaire pour créer des routes avec typage fort
+const createRoute = (config: RouteConfig): RouteConfig => config;
+
+// Routes publiques
+export const publicRoutes: RouteConfig[] = [
+  createRoute({
     path: '/',
-    element: <PublicLayout />,
+    element: React.createElement(PublicLayout),
     children: [
-      { path: '/', element: <Home /> },
-      { path: '/services', element: <Services /> },
-      { path: '/services/tourisme', element: <Tourisme /> },
-      { path: '/services/voitures', element: <Voitures /> },
-      { path: '/services/appartements', element: <Appartements /> },
-      { path: '/services/villas', element: <Villas /> },
-      { path: '/services/hotels', element: <Hotels /> },
-      { path: '/services/guides', element: <Guides /> },
-      { path: '/services/activites', element: <Activites /> },
-      { path: '/services/evenements', element: <Evenements /> },
-      { path: '/immobilier', element: <Immobilier /> },
-      { path: '/evenements', element: <Evenements /> },
-      { path: '/annonces', element: <Annonces /> },
-      { path: '/apropos', element: <Apropos /> },
-      { path: '/contact', element: <Contact /> },
-      { path: '/recherche', element: <Recherche /> },
-      { path: '/login', element: <Login /> },
-      { path: '/inscription', element: <Inscription /> },
-      { path: '*', element: <PageNotFound /> },
+      createRoute({ path: '/', element: React.createElement(Home) }),
+      createRoute({ path: '/services', element: React.createElement(Services) }),
+      createRoute({ path: '/services/tourisme', element: React.createElement(Tourisme) }),
+      createRoute({ path: '/services/voitures', element: React.createElement(Voitures) }),
+      createRoute({ path: '/services/appartements', element: React.createElement(Appartements) }),
+      createRoute({ path: '/services/villas', element: React.createElement(Villas) }),
+      createRoute({ path: '/services/hotels', element: React.createElement(Hotels) }),
+      createRoute({ path: '/services/guides', element: React.createElement(Guides) }),
+      createRoute({ path: '/services/activites', element: React.createElement(Activites) }),
+      createRoute({ path: '/services/evenements', element: React.createElement(Evenements) }),
+      createRoute({ path: '/immobilier', element: React.createElement(Immobilier) }),
+      createRoute({ path: '/evenements', element: React.createElement(Evenements) }),
+      createRoute({ path: '/annonces', element: React.createElement(Annonces) }),
+      createRoute({ path: '/apropos', element: React.createElement(Apropos) }),
+      createRoute({ path: '/contact', element: React.createElement(Contact) }),
+      createRoute({ path: '/recherche', element: React.createElement(Recherche) }),
+      createRoute({ path: '/login', element: React.createElement(Login) }),
+      createRoute({ path: '/inscription', element: React.createElement(Inscription) }),
+      createRoute({ path: '*', element: React.createElement(PageNotFound) }),
     ],
-  },
+  }),
 ];
 
-export const adminRoutes = [
-  {
+// Routes administrateur
+export const adminRoutes: RouteConfig[] = [
+  createRoute({
     path: '/dashboard/admin',
-    element: <DashboardLayout role="admin" />,
+    element: React.createElement(DashboardLayout, { role: 'admin' }),
+    role: 'admin',
     children: [
-      { path: '', element: <AdminDashboard /> },
-      { path: 'users', element: <UsersManagement /> },
-      { path: 'partners', element: <PartnersManagement /> },
-      { path: 'bookings', element: <BookingsManagement /> },
-      { path: 'messages', element: <MessagesManagement /> },
-      { path: 'payments', element: <PaymentsManagement /> },
-      { path: 'services', element: <ServicesManagement /> },
-      { path: '*', element: <div>Page d'administration non trouvée</div> },
+      createRoute({ path: '', element: React.createElement(AdminDashboard) }),
+      createRoute({ path: 'users', element: React.createElement(UsersManagement) }),
+      createRoute({ path: 'partners', element: React.createElement(PartnersManagement) }),
+      createRoute({ path: 'bookings', element: React.createElement(BookingsManagement) }),
+      createRoute({ path: 'messages', element: React.createElement(MessagesManagement) }),
+      createRoute({ path: 'payments', element: React.createElement(PaymentsManagement) }),
+      createRoute({ path: 'services', element: React.createElement(ServicesManagement) }),
+      createRoute({ 
+        path: '*',
+        element: React.createElement('div', { className: 'p-4 text-center' },
+          React.createElement('h2', { className: 'text-xl font-bold' }, "Page d'administration non trouvée")
+        )
+      }),
     ],
-  },
+  }),
 ];
 
-export const partnerRoutes = [
-  {
+// Routes partenaire
+export const partnerRoutes: RouteConfig[] = [
+  createRoute({
     path: '/dashboard/partner',
-    element: <DashboardLayout role="partner" />,
+    element: React.createElement(DashboardLayout, { role: 'partner' }),
+    role: 'partner',
     children: [
-      { path: '', element: <PartnerDashboard /> },
-      { path: 'evenements', element: <PartnerEvents /> },
-      { path: 'annonces', element: <PartnerAnnonces /> },
-      { path: 'profil', element: <PartnerProfile /> },
-      { path: 'parametres', element: <PartnerSettings /> },
-      { path: '*', element: <div>Page partenaire non trouvée</div> },
+      createRoute({ path: '', element: React.createElement(PartnerDashboard) }),
+      createRoute({ path: 'evenements', element: React.createElement(PartnerEvents) }),
+      createRoute({ path: 'annonces', element: React.createElement(PartnerAnnonces) }),
+      createRoute({ path: 'profil', element: React.createElement(PartnerProfile) }),
+      createRoute({ path: 'parametres', element: React.createElement(PartnerSettings) }),
+      createRoute({
+        path: '*',
+        element: React.createElement('div', { className: 'p-4 text-center' },
+          React.createElement('h2', { className: 'text-xl font-bold' }, 'Page partenaire non trouvée')
+        )
+      }),
     ],
-  },
+  }),
 ];
 
-export const clientRoutes = [
-  {
+// Routes client
+export const clientRoutes: RouteConfig[] = [
+  createRoute({
     path: '/dashboard/client',
-    element: <DashboardLayout role="client" />,
+    element: React.createElement(DashboardLayout, { role: 'client' }),
+    role: 'client',
     children: [
-      { path: '', element: <ClientDashboard /> },
-      { path: 'reservations', element: <ClientBookings /> },
-      { path: 'profil', element: <ClientProfile /> },
-      { path: 'parametres', element: <ClientSettings /> },
-      { path: '*', element: <div>Page client non trouvée</div> },
+      createRoute({ path: '', element: React.createElement(ClientDashboard) }),
+      createRoute({ path: 'reservations', element: React.createElement(ClientBookings) }),
+      createRoute({ path: 'profil', element: React.createElement(ClientProfile) }),
+      createRoute({ path: 'parametres', element: React.createElement(ClientSettings) }),
+      createRoute({
+        path: '*',
+        element: React.createElement('div', { className: 'p-4 text-center' },
+          React.createElement('h2', { className: 'text-xl font-bold' }, 'Page client non trouvée')
+        )
+      }),
     ],
-  },
+  }),
 ];
 
 // Redirections après connexion
-// Les clés doivent correspondre aux rôles renvoyés par votre système d'authentification
-export const redirectAfterLogin = {
+export const redirectAfterLogin: Record<string, string> = {
   admin: '/dashboard/admin',
   partner: '/dashboard/partner',
   client: '/dashboard/client',
   default: '/',
-} as const;
+};
 
 // Chemins protégés nécessitant une authentification
 export const protectedPaths = [
-  '/dashboard',
   '/dashboard/admin',
   '/dashboard/partner',
   '/dashboard/client',
@@ -146,14 +177,23 @@ export const isProtectedPath = (pathname: string): boolean => {
 // Récupère la redirection appropriée en fonction du rôle de l'utilisateur
 export const getRedirectPath = (userRole?: string): string => {
   if (!userRole) return '/login';
-  return redirectAfterLogin[userRole as keyof typeof redirectAfterLogin] || redirectAfterLogin.default;
+  return redirectAfterLogin[userRole] || redirectAfterLogin.default;
 };
+
+// Exporte toutes les routes combinées
+export const allRoutes: RouteConfig[] = [
+  ...publicRoutes,
+  ...adminRoutes,
+  ...partnerRoutes,
+  ...clientRoutes,
+];
 
 export default {
   publicRoutes,
   adminRoutes,
   partnerRoutes,
   clientRoutes,
+  allRoutes,
   redirectAfterLogin,
   protectedPaths,
   isProtectedPath,
