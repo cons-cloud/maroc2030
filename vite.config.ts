@@ -20,5 +20,24 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    // Configuration pour les imports dynamiques
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Création de chunks séparés pour les pages
+          admin: ['./src/Pages/dashboards/AdminDashboard'],
+          partner: ['./src/Pages/dashboards/PartnerDashboard'],
+          client: ['./src/Pages/dashboards/ClientDashboard'],
+        },
+      },
+    },
   },
+  // Configuration pour le chargement des modules
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+  },
+  // Configuration pour le chargement des fichiers de traduction
+  define: {
+    'process.env': {}
+  }
 });

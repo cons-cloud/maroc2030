@@ -1,0 +1,66 @@
+# robots.txt pour Maroc 2030
+# Optimisé pour Google, Bing, Yahoo, Baidu
+
+User-agent: *
+Allow: /
+
+# Pages à ne pas indexer
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /inscription
+Disallow: /payment
+Disallow: /api/
+
+# Fichiers à ne pas indexer
+Disallow: /*.json$
+Disallow: /*.xml$
+Disallow: /*.txt$
+
+# Autoriser les ressources importantes
+Allow: /assets/
+Allow: /*.css
+Allow: /*.js
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.png
+Allow: /*.webp
+Allow: /*.svg
+
+# Sitemap
+Sitemap: https://maroc2030.ma/sitemap.xml
+
+# Crawl-delay pour éviter la surcharge
+Crawl-delay: 1
+
+# Règles spécifiques pour Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Règles spécifiques pour Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Règles spécifiques pour Yahoo
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+# Règles spécifiques pour Baidu (Chine)
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+# Bloquer les mauvais bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /

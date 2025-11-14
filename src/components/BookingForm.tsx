@@ -1,26 +1,53 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
+
+interface Service {
+  id: string;
+  title: string;
+  price: number;
+  type?: string;
+  images?: string[];
+  description?: string;
+  duration?: string;
+  maxGuests?: number;
+}
 
 interface BookingFormProps {
   isOpen: boolean;
   onClose: () => void;
-  apartment: {
-    id: string;
-    title: string;
-    price: number;
-  } | null;
+  service: Service | null;
+  serviceType?: string;
 }
 
-const BookingForm = ({ isOpen, onClose, apartment }: BookingFormProps) => {
-  const [formData, setFormData] = useState({
-    checkIn: '',
-    checkOut: '',
-    guests: 1,
-    fullName: '',
-    email: '',
-    phone: '',
-    message: ''
+const BookingForm = ({ isOpen, onClose, service, serviceType }: BookingFormProps) => {
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
+  const navigate = useNavigate();
+  // Suppression de isSubmitting car non utilisé
+  const [formData, setFormData] = useState(() => {
+    // Utilisation d'une fonction d'initialisation pour le state
+    const userMeta = user?.user_metadata as Record<string, unknown> | undefined;
+    const fullName = (userMeta && 
+      (typeof userMeta['full_name'] === 'string' ? userMeta['full_name'] : 
+       (typeof userMeta['first_name'] === 'string' && typeof userMeta['last_name'] === 'string' 
+        ? `${userMeta['first_name']} ${userMeta['last_name']}` 
+        : ''))) || '';
+    
+    const phone = (userMeta && typeof userMeta['phone'] === 'string') ? userMeta['phone'] : '';
+    
+    return {
+      checkIn: '',
+      checkOut: '',
+      guests: 1,
+      fullName: fullName,
+      email: user?.email || '',
+      phone: phone,
+      message: ''
+    };
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -31,14 +58,93 @@ const BookingForm = ({ isOpen, onClose, apartment }: BookingFormProps) => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle form submission
-    console.log('Booking submitted:', { apartment, ...formData });
-    onClose();
+  // Fonction pour calculer le prix total en fonction des dates
+  const calculateTotalPrice = (price: number, startDate: string, endDate: string, guests: number = 1): number => {
+    if (!startDate || !endDate) return price;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return price * (nights > 0 ? nights : 1) * guests;
   };
 
-  if (!apartment) return null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!service) {
+      toast.error('Service non disponible pour le moment');
+      return;
+    }
+    
+    if (!formData.checkIn || !formData.checkOut) {
+      toast.error('Veuillez sélectionner les dates de séjour');
+      return;
+    }
+    
+    if (!isAuthenticated) {
+      // Rediriger vers la page de connexion avec les données du formulaire
+      navigate('/login', {
+        state: {
+          from: window.location.pathname,
+          reservationData: {
+            serviceId: service.id,
+            serviceTitle: service.title,
+            servicePrice: service.price,
+            serviceType: serviceType || 'service',
+            ...formData
+          },
+          redirectTo: '/payment',
+          message: 'Veuillez vous connecter pour finaliser votre réservation.'
+        }
+      });
+      return;
+    }
+    
+    try {
+      // Préparer les données de réservation
+      const reservationData = {
+        serviceId: service.id,
+        serviceTitle: service.title,
+        servicePrice: service.price,
+        serviceType: serviceType || 'service',
+        ...formData,
+        totalPrice: calculateTotalPrice(service.price, formData.checkIn, formData.checkOut, formData.guests)
+      };
+      
+      // Rediriger vers la page de paiement avec les données de réservation
+      navigate('/payment', {
+        state: reservationData
+      });
+      
+      // Fermer le formulaire
+      onClose();
+    } catch (error) {
+      console.error('Erreur lors de la réservation:', error);
+      toast.error('Une erreur est survenue lors de la réservation');
+    }
+  };
+
+  // Vérifier que le service existe
+  if (!service) {
+    onClose();
+    return null;
+  }
+  
+  // Calculer le prix total pour l'affichage
+  const totalPrice = calculateTotalPrice(
+    service.price, 
+    formData.checkIn, 
+    formData.checkOut, 
+    formData.guests
+  );
+  
+  // Formater le prix pour l'affichage
+  const formattedPrice = new Intl.NumberFormat('fr-MA', {
+    style: 'currency',
+    currency: 'MAD'
+  }).format(service.price);
 
   return (
     <AnimatePresence>
@@ -62,7 +168,7 @@ const BookingForm = ({ isOpen, onClose, apartment }: BookingFormProps) => {
               className="relative bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center z-10">
-                <h3 className="text-xl font-bold text-gray-900">Réserver {apartment.title}</h3>
+                <h2 className="text-2xl font-bold text-gray-900">Réserver {service.title}</h2>
                 <button
                   onClick={onClose}
                   className="text-gray-500 hover:text-gray-700"
@@ -73,8 +179,19 @@ const BookingForm = ({ isOpen, onClose, apartment }: BookingFormProps) => {
               </div>
               
               <div className="p-6">
-                <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                  <p className="font-medium text-blue-800">Prix: <span className="text-2xl font-bold">{apartment.price} DH</span> / nuit</p>
+                <div className="bg-emerald-50 p-4 rounded-lg mb-6">
+                  <p className="text-gray-600">
+                    Prix: <span className="font-semibold">{formattedPrice}</span>
+                    {serviceType === 'hotels' ? ' par nuit' : ''}
+                  </p>
+                  {formData.checkIn && formData.checkOut && (
+                    <p className="mt-2 text-gray-600">
+                      Total pour {Math.ceil((new Date(formData.checkOut).getTime() - new Date(formData.checkIn).getTime()) / (1000 * 60 * 60 * 24))} nuit(s): 
+                      <span className="font-semibold">
+                        {new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(totalPrice)}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -196,7 +313,7 @@ const BookingForm = ({ isOpen, onClose, apartment }: BookingFormProps) => {
                   <div className="pt-4">
                     <button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
                     >
                       Confirmer la réservation
                     </button>

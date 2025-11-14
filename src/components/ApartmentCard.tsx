@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import AuthGuard from './AuthGuard';
 
 
 interface ApartmentCardProps {
@@ -122,14 +122,14 @@ const ApartmentCard = ({
         <p className="text-gray-600 mt-3 line-clamp-2">{description}</p>
         
         <div className="mt-4 flex justify-between items-center">
-        
-          <button 
-            onClick={handleBookNow}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-blue-600 text-sm font-medium rounded-lg transition-colors duration-200"
-          >
-            Réserver
-          </button>
-
+          <AuthGuard>
+            <button 
+              onClick={handleBookNow}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-emerald-600 text-sm font-medium rounded-lg transition-colors duration-200"
+            >
+              Réserver
+            </button>
+          </AuthGuard>
         </div>
       </div>
     </motion.div>

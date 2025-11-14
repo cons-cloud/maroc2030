@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Page d'accueil -->
+  <url>
+    <loc>https://maroc2030.ma/</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Services principaux -->
+  <url>
+    <loc>https://maroc2030.ma/services</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/services/hotels</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/services/appartements</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/services/villas</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/services/voitures</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/services/tourisme</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Services secondaires -->
+  <url>
+    <loc>https://maroc2030.ma/services/guides</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/services/activites</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/services/evenements</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/annonces</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/immobilier</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Pages institutionnelles -->
+  <url>
+    <loc>https://maroc2030.ma/apropos</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/contact</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://maroc2030.ma/evenements</loc>
+    <lastmod>2024-11-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+</urlset>

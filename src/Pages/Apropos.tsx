@@ -9,21 +9,6 @@ const Apropos = () => {
     { id: 4, value: '100%', label: 'Engagement', icon: <FiHeart className="h-8 w-8 text-primary" /> },
   ];
 
-  const team = [
-    {
-      name: 'Karim El Mansouri',
-      role: 'Fondateur & Guide Expert',
-      bio: 'Guide touristique agréé avec plus de 15 ans d\'expérience dans le tourisme au Maroc.',
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80',
-    },
-    {
-      name: 'Amina Benjelloun',
-      role: 'Responsable Expérience Client',
-      bio: 'Passionnée par le service client et l\'authenticité des expériences marocaines.',
-      image: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80',
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
@@ -113,35 +98,6 @@ const Apropos = () => {
                 className="w-full h-full object-cover"
               />
             </motion.div>
-          </div>
-
-          {/* Team Section */}
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Notre Équipe</h2>
-            <div className="w-20 h-1 bg-primary mx-auto mb-12"></div>
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              {team.map((member, index) => (
-                <motion.div 
-                  key={member.name}
-                  className="bg-white p-6 rounded-xl shadow-lg text-center"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.2 }}
-                >
-                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-4 border-primary/20">
-                    <img 
-                      src={member.image} 
-                      alt={member.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{member.name}</h3>
-                  <p className="text-primary font-medium mb-3">{member.role}</p>
-                  <p className="text-gray-600">{member.bio}</p>
-                </motion.div>
-              ))}
-            </div>
           </div>
 
           {/* CTA Section */}

@@ -1,0 +1,194 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../../lib/supabase';
+import { Building, Plus, Edit, Trash2, MapPin } from 'lucide-react';
+import toast from 'react-hot-toast';
+import AppartementForm from '../../../components/forms/AppartementForm';
+import ConfirmDialog from '../../../components/modals/ConfirmDialog';
+
+const AppartementsManagement: React.FC = () => {
+  const [appartements, setAppartements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [selectedAppartement, setSelectedAppartement] = useState<any>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [appartementToDelete, setAppartementToDelete] = useState<any>(null);
+
+  useEffect(() => {
+    loadAppartements();
+  }, []);
+
+  const loadAppartements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('appartements')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAppartements(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Erreur lors du chargement');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNew = () => {
+    setSelectedAppartement(null);
+    setShowForm(true);
+  };
+
+  const handleEdit = (appartement: any) => {
+    setSelectedAppartement(appartement);
+    setShowForm(true);
+  };
+
+  const handleDeleteClick = (appartement: any) => {
+    setAppartementToDelete(appartement);
+    setShowConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!appartementToDelete) return;
+    try {
+      const { error } = await supabase.from('appartements').delete().eq('id', appartementToDelete.id);
+      if (error) throw error;
+      toast.success('Appartement supprimé');
+      setShowConfirm(false);
+      setAppartementToDelete(null);
+      loadAppartements();
+    } catch (error) {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
+  const filteredAppartements = appartements.filter(item =>
+    item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.city?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des Appartements</h1>
+          <p className="text-gray-600 mt-1">{filteredAppartements.length} appartement(s)</p>
+        </div>
+        <button 
+          onClick={handleNew} 
+          className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Nouvel Appartement
+        </button>
+      </div>
+
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-4">
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAppartements.map((item) => (
+            <div key={item.id} className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="relative h-48 bg-gray-200">
+                {item.images?.[0] ? (
+                  <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Building className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+                {item.featured && (
+                  <span className="absolute top-2 right-2 px-2 py-1 bg-yellow-500 text-white text-xs font-semibold rounded">⭐</span>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                <p className="text-sm text-gray-500 mb-2">{item.type}</p>
+                <div className="flex items-center text-sm text-gray-500 mb-3">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {item.city}
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600 mb-3">
+                  <span>🛏️ {item.bedrooms} ch</span>
+                  <span>🚿 {item.bathrooms} sdb</span>
+                  <span>📐 {item.surface_area}m²</span>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t">
+                  <div>
+                    <span className="text-lg font-bold text-emerald-600">
+                      {item.for_rent ? item.price_per_night : item.price_sale} MAD
+                    </span>
+                    <span className="text-sm text-gray-500">/{item.for_rent ? 'nuit' : 'total'}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(item)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded transition" title="Modifier">
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => handleDeleteClick(item)} className="p-2 text-red-600 hover:bg-red-50 rounded transition" title="Supprimer">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredAppartements.length === 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-12 text-center">
+            <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun appartement trouvé</h3>
+          </div>
+        )}
+
+      {/* Modals */}
+      {showForm && (
+        <AppartementForm
+          appartement={selectedAppartement}
+          onClose={() => {
+            setShowForm(false);
+            setSelectedAppartement(null);
+          }}
+          onSuccess={() => {
+            loadAppartements();
+          }}
+        />
+      )}
+
+      {showConfirm && (
+        <ConfirmDialog
+          isOpen={showConfirm}
+          onClose={() => {
+            setShowConfirm(false);
+            setAppartementToDelete(null);
+          }}
+          onConfirm={handleDeleteConfirm}
+          title="Supprimer l'appartement"
+          message={`Êtes-vous sûr de vouloir supprimer "${appartementToDelete?.title}" ? Cette action est irréversible.`}
+          type="danger"
+          confirmText="Supprimer"
+          cancelText="Annuler"
+        />
+      )}
+    </div>
+  );
+};
+
+// Exportation nommée pour la compatibilité avec React.lazy
+export { AppartementsManagement as default };

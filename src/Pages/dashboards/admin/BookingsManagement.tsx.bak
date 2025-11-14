@@ -1,0 +1,371 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../../lib/supabase';
+import { Calendar, Search, Filter, CheckCircle, XCircle, Clock, Trash2, DollarSign, TrendingUp } from 'lucide-react';
+import toast from 'react-hot-toast';
+import DashboardLayout from '../../../components/DashboardLayout';
+import ConfirmDialog from '../../../components/modals/ConfirmDialog';
+
+interface Booking {
+  id: string;
+  start_date: string;
+  end_date: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  client: {
+    company_name?: string;
+    phone?: string;
+  };
+  service: {
+    title: string;
+    price: number;
+  };
+}
+
+const BookingsManagement: React.FC = () => {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [deletingBooking, setDeletingBooking] = useState<Booking | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  const loadBookings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          client:client_id (company_name, phone),
+          service:service_id (title, price)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBookings(data || []);
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+      toast.error('Erreur lors du chargement des réservations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Statut mis à jour');
+      loadBookings();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingBooking) return;
+
+    try {
+      setIsDeleting(true);
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('id', deletingBooking.id);
+
+      if (error) throw error;
+
+      toast.success('Réservation supprimée avec succès');
+      setDeletingBooking(null);
+      loadBookings();
+    } catch (error: any) {
+      console.error('Error deleting booking:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const calculateDays = (startDate: string, endDate: string): number => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = 
+      booking.client?.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.service?.title?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || booking.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Statistiques
+  const stats = {
+    total: bookings.length,
+    pending: bookings.filter(b => b.status === 'pending').length,
+    confirmed: bookings.filter(b => b.status === 'confirmed').length,
+    cancelled: bookings.filter(b => b.status === 'cancelled').length,
+    completed: bookings.filter(b => b.status === 'completed').length,
+    totalRevenue: bookings
+      .filter(b => b.status === 'confirmed' || b.status === 'completed')
+      .reduce((sum, b) => sum + (b.total_amount || 0), 0),
+    monthRevenue: bookings
+      .filter(b => {
+        const bookingDate = new Date(b.created_at);
+        const now = new Date();
+        return bookingDate.getMonth() === now.getMonth() && 
+               bookingDate.getFullYear() === now.getFullYear() &&
+               (b.status === 'confirmed' || b.status === 'completed');
+      })
+      .reduce((sum, b) => sum + (b.total_amount || 0), 0),
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges: Record<string, { bg: string; text: string; icon: any }> = {
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
+      confirmed: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
+      cancelled: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle },
+      completed: { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: CheckCircle },
+    };
+    const badge = badges[status] || badges['pending'];
+    const Icon = badge.icon;
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
+        <Icon className="h-3 w-3 mr-1" />
+        {status}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout role="admin">
+      <div className="space-y-6">
+        {/* En-tête */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Gestion des Réservations</h1>
+            <p className="text-gray-600 mt-1">{filteredBookings.length} réservation(s) sur {bookings.length}</p>
+          </div>
+        </div>
+
+        {/* Statistiques */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Calendar className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+            <div className="text-sm text-gray-600">Total</div>
+          </div>
+          
+          <div className="bg-yellow-50 rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Clock className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+            <div className="text-sm text-gray-600">En attente</div>
+          </div>
+          
+          <div className="bg-green-50 rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="text-2xl font-bold text-green-600">{stats.confirmed}</div>
+            <div className="text-sm text-gray-600">Confirmées</div>
+          </div>
+          
+          <div className="bg-red-50 rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+            </div>
+            <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
+            <div className="text-sm text-gray-600">Annulées</div>
+          </div>
+          
+          <div className="bg-emerald-50 rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div className="text-2xl font-bold text-emerald-600">{stats.completed}</div>
+            <div className="text-sm text-gray-600">Terminées</div>
+          </div>
+          
+          <div className="bg-purple-50 rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign className="h-5 w-5 text-purple-600" />
+            </div>
+            <div className="text-2xl font-bold text-purple-600">{stats.totalRevenue.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Revenu total</div>
+          </div>
+          
+          <div className="bg-indigo-50 rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div className="text-2xl font-bold text-indigo-600">{stats.monthRevenue.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Ce mois</div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none"
+              >
+                <option value="all">Tous les statuts</option>
+                <option value="pending">En attente</option>
+                <option value="confirmed">Confirmé</option>
+                <option value="cancelled">Annulé</option>
+                <option value="completed">Terminé</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Bookings Table */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Service
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dates
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Durée
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Montant
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white/80 backdrop-blur-sm divide-y divide-gray-200">
+                {filteredBookings.map((booking) => (
+                  <tr key={booking.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {booking.client?.company_name || 'Client'}
+                      </div>
+                      <div className="text-sm text-gray-500">{booking.client?.phone}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{booking.service?.title}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {new Date(booking.start_date).toLocaleDateString('fr-FR')}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        au {new Date(booking.end_date).toLocaleDateString('fr-FR')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {calculateDays(booking.start_date, booking.end_date)} jour(s)
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-semibold text-gray-900">
+                        {booking.total_amount} MAD
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(booking.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        <select
+                          value={booking.status}
+                          onChange={(e) => updateStatus(booking.id, e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value="pending">En attente</option>
+                          <option value="confirmed">Confirmer</option>
+                          <option value="cancelled">Annuler</option>
+                          <option value="completed">Terminer</option>
+                        </select>
+                        <button
+                          onClick={() => setDeletingBooking(booking)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Confirmation de suppression */}
+      {deletingBooking && (
+        <ConfirmDialog
+          isOpen={true}
+          title="Supprimer la réservation"
+          message={`Êtes-vous sûr de vouloir supprimer la réservation de ${deletingBooking.client?.company_name || 'ce client'} pour ${deletingBooking.service?.title} ? Cette action est irréversible.`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          onConfirm={handleDelete}
+          onClose={() => setDeletingBooking(null)}
+          type="danger"
+          loading={isDeleting}
+        />
+      )}
+    </DashboardLayout>
+  );
+};
+
+export default BookingsManagement;

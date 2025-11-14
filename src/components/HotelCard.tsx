@@ -108,7 +108,7 @@ const HotelCard = ({
         {amenities && amenities.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {amenities.slice(0, 3).map((amenity, index) => (
-              <span key={index} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              <span key={index} className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded">
                 {amenity}
               </span>
             ))}
@@ -120,7 +120,7 @@ const HotelCard = ({
         
         <div className="mt-4 flex justify-between items-center">
           <div>
-            <span className="text-2xl font-bold text-blue-600">{price} DH</span>
+            <span className="text-2xl font-bold text-emerald-600">{price} DH</span>
             <span className="text-gray-500 text-sm"> / nuit</span>
           </div>
           <p className="text-sm text-gray-600 line-clamp-2">{description}</p>

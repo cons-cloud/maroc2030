@@ -5,6 +5,22 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class', // Active le mode sombre basé sur les classes
+  // Configuration pour le support RTL
+  plugins: [require('tailwindcss-rtl')],
+  // Configuration pour le support RTL et LTR
+  variants: {
+    extend: {
+      textAlign: ['rtl'],
+      float: ['rtl'],
+      margin: ['rtl'],
+      padding: ['rtl'],
+      inset: ['rtl'],
+      space: ['rtl'],
+      transform: ['rtl'],
+      translate: ['rtl'],
+      flexDirection: ['rtl'],
+    },
+  },
   theme: {
     extend: {
       colors: {

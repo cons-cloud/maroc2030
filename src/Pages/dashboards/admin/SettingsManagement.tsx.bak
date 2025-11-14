@@ -1,0 +1,293 @@
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from '../../../components/DashboardLayout';
+import { Settings, Save, Globe, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Clock } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
+import toast from 'react-hot-toast';
+
+interface SiteSettings {
+  site_name: string;
+  site_description: string;
+  contact_email: string;
+  contact_phone: string;
+  contact_address: string;
+  facebook_url: string;
+  instagram_url: string;
+  twitter_url: string;
+  business_hours: string;
+  maintenance_mode: boolean;
+}
+
+const SettingsManagement: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState<SiteSettings>({
+    site_name: 'Maroc 2030',
+    site_description: 'Plateforme de services touristiques au Maroc',
+    contact_email: 'contact@maroc2030.ma',
+    contact_phone: '+212 5XX-XXXXXX',
+    contact_address: 'Casablanca, Maroc',
+    facebook_url: '',
+    instagram_url: '',
+    twitter_url: '',
+    business_hours: 'Lun-Ven: 9h-18h',
+    maintenance_mode: false,
+  });
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('section', 'contact');
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const settingsMap: any = {};
+        data.forEach(item => {
+          settingsMap[item.key] = item.value;
+        });
+        
+        setSettings(prev => ({
+          ...prev,
+          contact_email: settingsMap.email || prev.contact_email,
+          contact_phone: settingsMap.phone || prev.contact_phone,
+          contact_address: settingsMap.address || prev.contact_address,
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      // Update contact info in site_content
+      const updates = [
+        { key: 'email', value: settings.contact_email },
+        { key: 'phone', value: settings.contact_phone },
+        { key: 'address', value: settings.contact_address },
+      ];
+
+      for (const update of updates) {
+        await supabase
+          .from('site_content')
+          .update({ value: update.value, value_ar: update.value })
+          .eq('section', 'contact')
+          .eq('key', update.key);
+      }
+
+      toast.success('Paramètres sauvegardés avec succès');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout role="admin">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+            <p className="text-gray-600 mt-1">Configuration générale du site</p>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+          >
+            <Save className="h-5 w-5 mr-2" />
+            {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+          </button>
+        </div>
+
+        {/* Informations générales */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <Globe className="h-5 w-5 text-emerald-600 mr-2" />
+            <h2 className="text-lg font-semibold text-gray-900">Informations générales</h2>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nom du site
+              </label>
+              <input
+                type="text"
+                value={settings.site_name}
+                onChange={(e) => setSettings({ ...settings, site_name: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description du site
+              </label>
+              <textarea
+                value={settings.site_description}
+                onChange={(e) => setSettings({ ...settings, site_description: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Coordonnées */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <Phone className="h-5 w-5 text-emerald-600 mr-2" />
+            <h2 className="text-lg font-semibold text-gray-900">Coordonnées</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Mail className="h-4 w-4 inline mr-1" />
+                Email de contact
+              </label>
+              <input
+                type="email"
+                value={settings.contact_email}
+                onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Phone className="h-4 w-4 inline mr-1" />
+                Téléphone
+              </label>
+              <input
+                type="tel"
+                value={settings.contact_phone}
+                onChange={(e) => setSettings({ ...settings, contact_phone: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="h-4 w-4 inline mr-1" />
+                Adresse
+              </label>
+              <input
+                type="text"
+                value={settings.contact_address}
+                onChange={(e) => setSettings({ ...settings, contact_address: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="h-4 w-4 inline mr-1" />
+                Horaires d'ouverture
+              </label>
+              <input
+                type="text"
+                value={settings.business_hours}
+                onChange={(e) => setSettings({ ...settings, business_hours: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder="Lun-Ven: 9h-18h"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Réseaux sociaux */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <Facebook className="h-5 w-5 text-emerald-600 mr-2" />
+            <h2 className="text-lg font-semibold text-gray-900">Réseaux sociaux</h2>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Facebook className="h-4 w-4 inline mr-1" />
+                Facebook
+              </label>
+              <input
+                type="url"
+                value={settings.facebook_url}
+                onChange={(e) => setSettings({ ...settings, facebook_url: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder="https://facebook.com/maroc2030"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Instagram className="h-4 w-4 inline mr-1" />
+                Instagram
+              </label>
+              <input
+                type="url"
+                value={settings.instagram_url}
+                onChange={(e) => setSettings({ ...settings, instagram_url: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder="https://instagram.com/maroc2030"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Twitter className="h-4 w-4 inline mr-1" />
+                Twitter
+              </label>
+              <input
+                type="url"
+                value={settings.twitter_url}
+                onChange={(e) => setSettings({ ...settings, twitter_url: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder="https://twitter.com/maroc2030"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Mode maintenance */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <Settings className="h-5 w-5 text-emerald-600 mr-2" />
+            <h2 className="text-lg font-semibold text-gray-900">Options avancées</h2>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-900">Mode maintenance</h3>
+              <p className="text-sm text-gray-500">Désactiver temporairement le site public</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.maintenance_mode}
+                onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/80 backdrop-blur-sm after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default SettingsManagement;

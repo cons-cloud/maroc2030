@@ -1,58 +1,93 @@
-# Maroc 2030 - Plateforme de Tourisme et Services au Maroc
+# 🇲🇦 Maroc 2030 - Plateforme Complète de Tourisme et Services
 
-Application web moderne pour les services de voyage au Maroc : location de voitures, réservation d'hôtels, appartements, villas et tourisme.
+Plateforme web moderne et complète pour les services de voyage au Maroc avec système de réservation, paiement en ligne, et dashboards pour admin, partenaires et clients.
+
+## ✨ Fonctionnalités Principales
+
+### 🌐 Site Public
+- 🏠 Location d'appartements, villas et hôtels
+- 🚗 Location de voitures
+- ✈️ Circuits touristiques et excursions
+- 🎉 Événements et activités
+- 📢 Annonces et promotions
+- 📞 Formulaire de contact
+
+### 👨‍💼 Dashboard Admin
+- Gestion complète des utilisateurs
+- Création et gestion des partenaires
+- Vue d'ensemble des réservations
+- Gestion des paiements
+- Messages de contact
+- Statistiques détaillées
+
+### 🤝 Dashboard Partenaire
+- Ajout et gestion de services (voitures, propriétés, circuits)
+- Suivi des réservations
+- Statistiques de performance
+- Gestion du profil d'entreprise
+
+### 👤 Dashboard Client
+- Réservation de services
+- Historique des réservations
+- Gestion des paiements
+- Profil utilisateur
 
 ## 🚀 Technologies Utilisées
 
+### Frontend
 - **React 19** avec TypeScript
 - **Vite** - Build tool ultra-rapide
 - **Tailwind CSS 4** - Framework CSS utility-first
 - **React Router 7** - Navigation et routing
-- **TanStack React Query** - Gestion de l'état serveur
 - **Framer Motion** - Animations fluides
 - **React Hot Toast** - Notifications élégantes
-- **Lucide React** & **React Icons** - Icônes modernes
+- **Lucide React** - Icônes modernes
 
-## ⚠️ Problèmes Identifiés et Corrigés
+### Backend & Database
+- **Supabase** - Backend as a Service
+  - PostgreSQL Database
+  - Authentication
+  - Row Level Security (RLS)
+  - Real-time subscriptions
+- **Stripe** - Paiements en ligne (à intégrer)
 
-### ✅ Problèmes Corrigés
-
-1. **Double configuration de QueryClient** 
-   - ❌ Le `QueryClientProvider` était défini à la fois dans `App.tsx` et `main.tsx`
-   - ✅ Corrigé : Maintenant uniquement dans `main.tsx`
-
-2. **Service Worker manquant**
-   - ❌ Le code tentait d'enregistrer un service worker inexistant
-   - ✅ Corrigé : Code du service worker retiré de `main.tsx`
-
-### 🔧 Configuration
-
-Le projet est configuré avec :
-- TypeScript strict mode
-- ESLint pour la qualité du code
-- Tailwind CSS 4 avec plugins personnalisés
-- Lazy loading des routes pour les performances
-- Optimisation des images et assets
-
-## 📦 Installation
+## 🚀 Démarrage Rapide
 
 ### Prérequis
 
 - **Node.js** (version 18 ou supérieure)
 - **npm** ou **yarn** ou **pnpm**
+- Un compte **Supabase** (gratuit)
 
-### Étapes d'installation
+### Installation en 5 minutes
 
 ```bash
-# 1. Installer les dépendances
+# 1. Cloner le projet
+git clone <votre-repo>
+cd Maroc-2030
+
+# 2. Installer les dépendances
 npm install
 
-# 2. Démarrer le serveur de développement
-npm run dev
+# 3. Configurer Supabase (voir QUICK_START.md)
+cp .env.example .env
+# Remplir les variables VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY
 
-# 3. Ouvrir le navigateur à l'adresse
-# http://localhost:3000
+# 4. Créer la base de données
+# Exécuter supabase-schema.sql dans Supabase SQL Editor
+
+# 5. Démarrer l'application
+npm run dev
 ```
+
+📖 **Guide détaillé** : Consultez [QUICK_START.md](./QUICK_START.md) pour un guide pas à pas complet.
+
+## 📚 Documentation
+
+- **[QUICK_START.md](./QUICK_START.md)** - Démarrage en 5 minutes
+- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - Guide de configuration complet
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Architecture détaillée du projet
+- **[supabase-schema.sql](./supabase-schema.sql)** - Schéma de la base de données
 
 ## 🛠️ Scripts Disponibles
 
@@ -75,45 +110,45 @@ npm run lint
 ```
 Maroc-2030/
 ├── public/                    # Assets statiques
-│   ├── assets/
-│   │   ├── APT/              # Images des appartements
-│   │   ├── events/           # Images des événements
-│   │   └── hero/             # Images du hero section
-│   └── about/                # Images à propos
+│   └── assets/               # Images et médias
 ├── src/
-│   ├── components/           # Composants réutilisables
+│   ├── Pages/
+│   │   ├── Home.tsx          # Page d'accueil
+│   │   ├── Services.tsx      # Page des services
+│   │   ├── Contact.tsx       # Formulaire de contact
+│   │   ├── Login.tsx         # ✨ Page de connexion
+│   │   ├── Inscription.tsx   # ✨ Page d'inscription
+│   │   ├── services/         # Sous-pages de services
+│   │   │   ├── Tourisme.tsx
+│   │   │   ├── Voitures.tsx
+│   │   │   ├── Appartements.tsx
+│   │   │   ├── Villas.tsx
+│   │   │   └── Hotels.tsx
+│   │   └── dashboards/       # ✨ Dashboards
+│   │       ├── AdminDashboard.tsx
+│   │       ├── PartnerDashboard.tsx
+│   │       └── ClientDashboard.tsx
+│   ├── components/
 │   │   ├── Navbar.tsx
 │   │   ├── Footer.tsx
-│   │   ├── Hero.tsx
-│   │   ├── ApartmentCard.tsx
-│   │   ├── HotelCard.tsx
-│   │   ├── ServiceCard.tsx
-│   │   ├── SearchBar.tsx
-│   │   ├── BookingForm.tsx
-│   │   └── LoadingSpinner.tsx
-│   ├── Pages/                # Pages de l'application
-│   │   ├── Home.tsx
-│   │   ├── Services.tsx
-│   │   ├── Evenements.tsx
-│   │   ├── Imam.tsx
-│   │   ├── Annonces.tsx
-│   │   ├── Apropos.tsx
-│   │   ├── Contact.tsx
-│   │   ├── Inscription.tsx
-│   │   ├── PageNotFound.tsx
-│   │   └── services/         # Sous-pages de services
-│   │       ├── Tourisme.tsx
-│   │       ├── Voitures.tsx
-│   │       ├── Appartements.tsx
-│   │       ├── Villas.tsx
-│   │       └── Hotels.tsx
-│   ├── App.tsx              # Composant principal avec routes
-│   ├── main.tsx             # Point d'entrée de l'application
-│   └── index.css            # Styles globaux
-├── tailwind.config.js       # Configuration Tailwind
-├── vite.config.ts           # Configuration Vite
-└── package.json             # Dépendances du projet
+│   │   ├── DashboardLayout.tsx    # ✨ Layout des dashboards
+│   │   ├── ProtectedRoute.tsx     # ✨ Protection des routes
+│   │   └── ...
+│   ├── contexts/
+│   │   └── AuthContext.tsx        # ✨ Contexte d'authentification
+│   ├── lib/
+│   │   └── supabase.ts            # ✨ Configuration Supabase
+│   ├── App.tsx
+│   └── main.tsx
+├── supabase-schema.sql            # ✨ Schéma de la base de données
+├── .env.example                   # ✨ Variables d'environnement
+├── QUICK_START.md                 # ✨ Guide de démarrage rapide
+├── SETUP_GUIDE.md                 # ✨ Guide de configuration
+├── ARCHITECTURE.md                # ✨ Architecture du projet
+└── package.json
 ```
+
+✨ = Nouveaux fichiers ajoutés pour le backend et les dashboards
 
 ## 🎨 Personnalisation
 
@@ -136,6 +171,7 @@ Les polices sont configurées avec Google Fonts :
 
 ## 🌐 Routes Disponibles
 
+### Routes Publiques
 - `/` - Accueil
 - `/services` - Page principale des services
   - `/services/appartements` - Location d'appartements
@@ -144,11 +180,18 @@ Les polices sont configurées avec Google Fonts :
   - `/services/villas` - Location de villas
   - `/services/hotels` - Réservation d'hôtels
 - `/evenements` - Événements au Maroc
-- `/imam` - Services d'imam
 - `/annonces` - Annonces
 - `/apropos` - À propos
 - `/contact` - Contact
-- `/inscription` - Inscription
+
+### Routes d'Authentification
+- `/inscription` - ✨ Inscription
+- `/login` - ✨ Connexion
+
+### Routes Protégées (Dashboards)
+- `/dashboard/admin` - ✨ Dashboard Administrateur
+- `/dashboard/partner` - ✨ Dashboard Partenaire
+- `/dashboard/client` - ✨ Dashboard Client
 
 ## 🚀 Déploiement
 

@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import ServiceDetail from "../../components/ServiceDetail";
-import BookingForm from "../../components/BookingForm";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ServiceHero from "../../components/ServiceHero";
+import ServiceCard from '../../components/ServiceCard';
+import { supabase } from '../../lib/supabase';
+import toast from 'react-hot-toast';
+import LoadingState from '../../components/LoadingState';
 
 interface Villa {
   id: string;
@@ -14,189 +17,246 @@ interface Villa {
   bedrooms: number;
   bathrooms: number;
   area: number;
+  rating?: number;
   amenities?: string[];
   link?: string;
+  [key: string]: any;
 }
 
-const Villas: React.FC = () => {
-  const [selectedCity, setSelectedCity] = useState<string>('Toutes les villes');
+const Villas = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [villas, setVillas] = useState<{ [key: string]: Villa[] }>({});
-  const [selectedVilla, setSelectedVilla] = useState<Villa | null>(null);
-  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [villas, setVillas] = useState<Villa[]>([]);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Gestion de la sélection d'une ville
+  const handleCitySelect = (city: string | null) => {
+    setSelectedCity(city);
+  };
+
+  // Gestion de la recherche
+  const handleSearch = (query: string) => {
+    console.log('Recherche de villa:', query);
+    // Implémentez la logique de recherche ici
+  };
+
+  // Gestion de la réservation
+  const handleBookNow = (villa: Villa) => {
+    // Rediriger vers la page de réservation avec les détails de la villa
+    navigate(`/reservation/villa/${villa.id}`, {
+      state: {
+        service: {
+          id: villa.id,
+          title: villa.title,
+          description: villa.description,
+          price: villa.price,
+          images: villa.images,
+          type: 'villa',
+          city: villa.city,
+          maxGuests: villa.bedrooms * 2 + 2, // Estimation du nombre de personnes
+          details: {
+            chambres: villa.bedrooms,
+            sallesDeBain: villa.bathrooms,
+            superficie: villa.area,
+            équipements: villa.amenities || []
+          }
+        }
+      }
+    });
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVillas({
-        'Marrakech': [
-          {
-            id: 'mar1',
-            title: 'Villa de luxe avec piscine',
-            description: 'Magnifique villa de luxe avec piscine privée, jardin paysagé et vue sur l\'Atlas.',
-            price: 2500,
-            address: 'Quartier Palmeraie',
-            city: 'Marrakech',
-            bedrooms: 5,
-            bathrooms: 4,
-            area: 350,
-            images: ['/assets/APT/MARRAKECH/apt1/1.jpg','/assets/APT/MARRAKECH/apt1/2.jpg']
-          },
-          {
-            id: 'mar2',
-            title: 'Villa moderne avec jardin',
-            description: 'Villa moderne et élégante avec jardin privatif et terrasse ensoleillée.',
-            price: 1800,
-            address: 'Quartier Hivernage',
-            city: 'Marrakech',
-            bedrooms: 4,
-            bathrooms: 3,
-            area: 280,
-            images: ['/assets/APT/MARRAKECH/apt2/1.jpg', '/assets/APT/MARRAKECH/apt2/2.jpg']
-          }
-        ],
-        'Agadir': [
-          {
-            id: 'aga1',
-            title: 'Villa face à la mer',
-            description: 'Splendide villa avec vue directe sur l\'océan. Accès privé à la plage et piscine à débordement.',
-            price: 3000,
-            address: 'Quartier Founty',
-            city: 'Agadir',
-            bedrooms: 6,
-            bathrooms: 5,
-            area: 400,
-            images: ['/assets/APT/AGADIR/APPART1/6.jpg', '/assets/APT/AGADIR/APPART1/7.jpg', '/assets/APT/AGADIR/APPART1/8.jpg']
-          }
-        ],
-        'Essaouira': [
-          {
-            id: 'ess1',
-            title: 'Villa typique en médina',
-            description: 'Villa traditionnelle marocaine entièrement rénovée dans la médina d\'Essaouira.',
-            price: 1500,
-            address: 'Médina',
-            city: 'Essaouira',
-            bedrooms: 3,
-            bathrooms: 2,
-            area: 200,
-            images: ['/assets/APT/ESSAOUIRA/APPART1/1.jpg', '/assets/APT/ESSAOUIRA/APPART1/2.jpg']
-          }
-        ]
-      });
-      setIsLoading(false);
-    }, 1000);
+    const loadVillas = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Charger les villas de la table villas
+        const { data: villasData, error: villasError } = await supabase
+          .from('villas')
+          .select('*')
+          .eq('available', true)
+          .order('featured', { ascending: false })
+          .order('created_at', { ascending: false });
 
-    return () => clearTimeout(timer);
+        if (villasError) throw villasError;
+
+        // Charger les villas des partenaires depuis partner_products
+        const { data: partnerVillas, error: partnerError } = await supabase
+          .from('partner_products')
+          .select('*')
+          .eq('available', true)
+          .eq('product_type', 'villa')
+          .order('created_at', { ascending: false });
+
+        if (partnerError) throw partnerError;
+
+        // Combiner les villas
+        const allVillas: Villa[] = [];
+        
+        // Ajouter les villas de la table villas
+        if (villasData) {
+          allVillas.push(...villasData.map((villa: any) => ({
+            id: villa.id,
+            title: villa.title,
+            description: villa.description || '',
+            price: villa.price_per_night || villa.price_sale || 0,
+            address: villa.address || '',
+            city: villa.city,
+            bedrooms: villa.bedrooms || 0,
+            bathrooms: villa.bathrooms || 0,
+            area: villa.area_sqm || 0,
+            amenities: villa.amenities || [],
+            images: villa.images || ['/assets/hero/hero1.jpg'],
+            rating: villa.rating
+          })));
+        }
+
+        // Ajouter les villas des partenaires
+        if (partnerVillas) {
+          allVillas.push(...partnerVillas.map((villa: any) => ({
+            id: `partner-${villa.id}`,
+            title: villa.title,
+            description: villa.description || '',
+            price: villa.price || 0,
+            address: villa.address || '',
+            city: villa.city,
+            bedrooms: villa.bedrooms || 0,
+            bathrooms: villa.bathrooms || 0,
+            area: villa.area || 0,
+            amenities: villa.amenities || [],
+            images: villa.images || ['/assets/hero/hero1.jpg'],
+            rating: villa.rating
+          })));
+        }
+
+        setVillas(allVillas);
+      } catch (error) {
+        console.error('Erreur lors du chargement des villas:', error);
+        toast.error('Erreur lors du chargement des villas');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadVillas();
   }, []);
 
-  const allCities = ['Toutes les villes', ...Object.keys(villas)];
-  const displayedVillas =
-    selectedCity === 'Toutes les villes'
-      ? Object.values(villas).flat()
-      : villas[selectedCity] || [];
+  // Filtrer les villas par ville si une ville est sélectionnée
+  const filteredVillas = selectedCity
+    ? villas.filter(villa => villa.city === selectedCity)
+    : villas;
 
-  const handleBookVilla = (villa: Villa) => {
-    setSelectedVilla(villa);
-    setShowBookingForm(true);
-  };
+  // Extraire les villes uniques pour les filtres
+  const cities = Array.from(new Set(villas.map(villa => villa.city))).filter(Boolean) as string[];
 
-  const handleCloseBookingForm = () => {
-    setShowBookingForm(false);
-    setSelectedVilla(null);
-  };
-
-  const handleBookingSubmit = (bookingData: any) => {
-    console.log('Booking data:', {
-      ...bookingData,
-      villa: selectedVilla?.title
-    });
-    setShowBookingForm(false);
-  };
-
-  const villasList = displayedVillas.map((villa) => ({
-    id: villa.id,
-    title: villa.title,
-    description: villa.description,
-    images: villa.images,
-    price: villa.price,
-    address: villa.address || '',  
-    city: villa.city || '',        
-    bedrooms: villa.bedrooms || 0, 
-    bathrooms: villa.bathrooms || 0, 
-    area: villa.area || 0,         
-    onBook: () => handleBookVilla(villa),
-    bookingLabel: "Réserver cette villa"
-  }));
-
-  const features = [
-    "Services de ménage quotidien inclus",
-    "Piscine privée ou partagée selon la villa",
-    "Cuisine entièrement équipée",
-    "Conciergerie 24/7",
-    "Option petit déjeuner disponible"
-  ];
-
+  // Afficher le chargement
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <ServiceHero 
+          title="Villas de luxe"
+          subtitle="Découvrez nos villas d'exception pour des séjours inoubliables"
+          images={[
+            '/assets/hero/villas-1.jpg',
+            '/assets/hero/villas-2.jpg',
+            '/assets/hero/villas-3.jpg'
+          ]}
+          searchPlaceholder="Rechercher une villa, une ville..."
+          onSearch={handleSearch}
+        />
+        <div className="container mx-auto px-4 py-12">
+          <LoadingState 
+            fullScreen={false}
+            text="Chargement des villas..."
+          />
+        </div>
+      </div>
+    );
   }
 
+  // Rendu principal
   return (
-    <>
-      <ServiceDetail
-        title="Nos Villas et Riads d'Exception"
-        description="Découvrez notre sélection exclusive de villas et riads haut de gamme à travers le Maroc."
-        items={villasList.map(villa => ({
-          ...villa,
-          image: villa.images[0]
-        }))}
-        image={villasList[0]?.images[0] || "/assets/APT/FES/apt2/6.jpg"}
-        features={features}
-        bookingAction={
-          <button
-            onClick={() => {
-              if (villasList[0]) {
-                handleBookVilla(villasList[0]);
-              } else {
-                // Handle the case when there are no villas
-                console.error('No villas available to book');
-              }
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            Réserver maintenant
-          </button>
-        }
+    <div className="min-h-screen bg-gray-50">
+      <ServiceHero 
+        title="Villas de luxe"
+        subtitle="Découvrez nos villas d'exception pour des séjours inoubliables"
+        images={[
+          '/assets/hero/villas-1.jpg',
+          '/assets/hero/villas-2.jpg',
+          '/assets/hero/villas-3.jpg'
+        ]}
+        searchPlaceholder="Rechercher une villa, une ville..."
+        onSearch={handleSearch}
       />
-
-      {showBookingForm && selectedVilla && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">
-                  Réserver {selectedVilla.title}
-                </h3>
-                <button
-                  onClick={handleCloseBookingForm}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-              <BookingForm
-                isOpen={showBookingForm}
-                onClose={handleCloseBookingForm}
-                apartment={{
-                  id: selectedVilla.id,
-                  title: selectedVilla.title,
-                  price: selectedVilla.price
-                }}
-              />
-            </div>
+      
+      <div className="container mx-auto px-4 py-12">
+        {/* Filtres par ville */}
+        {cities.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8 overflow-x-auto pb-2">
+            <button
+              onClick={() => handleCitySelect(null)}
+              className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${
+                !selectedCity 
+                  ? 'bg-emerald-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              } transition-colors`}
+            >
+              Toutes les villes
+            </button>
+            {cities.map((city) => (
+              <button
+                key={city}
+                onClick={() => handleCitySelect(city)}
+                className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${
+                  selectedCity === city 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                } transition-colors`}
+              >
+                {city}
+              </button>
+            ))}
           </div>
+        )}
+        
+        {/* Liste des villas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredVillas.map((villa) => (
+            <ServiceCard
+              key={villa.id}
+              id={villa.id}
+              title={villa.title}
+              description={villa.description}
+              images={villa.images}
+              price={villa.price}
+              rating={villa.rating}
+              tags={[
+                `${villa.bedrooms} chambres`,
+                `${villa.bathrooms} sdb`,
+                `${villa.area} m²`,
+                villa.city
+              ]}
+              link={`/villas/${villa.id}`}
+              onBookNow={() => handleBookNow(villa)}
+            />
+          ))}
         </div>
-      )}
-    </>
+        
+        {filteredVillas.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Aucune villa disponible pour le moment.</p>
+            {selectedCity && (
+              <button
+                onClick={() => setSelectedCity(null)}
+                className="mt-4 text-emerald-600 hover:text-emerald-800 font-medium"
+              >
+                Voir toutes les villas
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

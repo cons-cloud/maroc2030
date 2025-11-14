@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiArrowRight, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import Hero from "../components/Hero";
-import Apropos from "./Apropos";
-import Contact from "./Contact";
+import CallModal from "../components/CallModal";
 import { Outlet } from 'react-router-dom';
 
 interface Service {
@@ -13,9 +12,14 @@ interface Service {
   link: string;
 }
 
-const Home = () => {
+interface HomeProps {
+  onOpenBooking: (apartment: any) => void;
+}
+
+const Home: React.FC<HomeProps> = ({ onOpenBooking }) => {
   const [activeService, setActiveService] = useState<number>(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [showCallModal, setShowCallModal] = useState(false);
 
   const services: Service[] = [
     {
@@ -63,6 +67,7 @@ const Home = () => {
       const timer = setTimeout(nextService, 5000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [activeService, isHovered]);
 
   const container = {
@@ -136,12 +141,20 @@ const Home = () => {
                       <>
                         <h3 className="text-3xl md:text-5xl font-bold mb-4">{activeServiceData.title}</h3>
                         <p className="text-xl mb-6 max-w-2xl">{activeServiceData.description}</p>
-                        <a 
-                          href={activeServiceData.link}
-                          className="inline-flex items-center bg-green-500 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-100 transition-all duration-300 transform hover:scale-105"
+                        <button 
+                          onClick={() => onOpenBooking({
+                            id: `home-${activeServiceData.title.toLowerCase().replace(/\\s+/g, '-')}`,
+                            title: activeServiceData.title,
+                            description: activeServiceData.description,
+                            price: 500, // Prix par défaut
+                            address: 'Maroc',
+                            city: 'Marrakech',
+                            images: [activeServiceData.image]
+                          })}
+                          className="inline-flex items-center bg-green-500 text-white px-6 py-3 rounded-full font-medium hover:bg-green-600 transition-all duration-300 transform hover:scale-105"
                         >
-                          Découvrir <FiArrowRight className="ml-2" />
-                        </a>
+                          Réserver maintenant <FiArrowRight className="ml-2" />
+                        </button>
                       </>
                     )}
                   </motion.div>
@@ -188,7 +201,7 @@ const Home = () => {
             viewport={{ once: true, margin: "-100px" }}
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16"
           >
-            {services.map((service, index) => (
+            {services.map((service) => (
               <motion.div 
                 key={service.title}
                 variants={item}
@@ -349,17 +362,19 @@ const Home = () => {
             >
               Contactez-nous
             </a>
-            <a 
-              href="tel:+212612345678"
+            <button 
+              onClick={() => setShowCallModal(true)}
               className="px-8 py-3 border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
             >
               Appelez-nous
-            </a>
+            </button>
           </div>
         </div>
       </section>
       <Outlet />
       
+      {/* Modal d'appel */}
+      <CallModal isOpen={showCallModal} onClose={() => setShowCallModal(false)} />
     </div>
   );
 };

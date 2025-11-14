@@ -94,7 +94,7 @@ const ServiceDetail: React.FC<ServiceDetailProps> = ({
             {item.onBook && (
               <button
                 onClick={item.onBook}
-                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-primary text-blue-500 px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary-dark"
+                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-primary text-emerald-500 px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary-dark"
               >
                 {item.bookingLabel || 'Réserver'}
               </button>

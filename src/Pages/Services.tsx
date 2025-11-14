@@ -1,15 +1,17 @@
+import { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaCar, FaHome, FaUmbrellaBeach, FaHotel, FaRoute } from 'react-icons/fa';
 import ServiceCard from "../components/ServiceCard";
+import CallModal from "../components/CallModal";
 
 const serviceCategories = [
   {
     id: 'voitures',
     title: 'Location de Voitures',
-    icon: <FaCar className="text-4xl mb-4 text-blue-500" />,
-    gradient: 'from-blue-500 to-cyan-400',
-    hover: 'hover:from-blue-600 hover:to-cyan-500',
+    icon: <FaCar className="text-4xl mb-4 text-emerald-500" />,
+    gradient: 'from-emerald-500 to-cyan-400',
+    hover: 'hover:from-emerald-600 hover:to-cyan-500',
     description: 'Explorez le Maroc à votre rythme avec nos véhicules de location haut de gamme.',
     images: ['/VOITURE/1.jpg', '/VOITURE/2.jpg', '/VOITURE/3.jpg'],
     price: 200,
@@ -77,7 +79,7 @@ const item = {
     opacity: 1, 
     y: 0,
     transition: {
-      type: 'spring',
+      type: 'spring' as const,
       stiffness: 100,
       damping: 10
     }
@@ -85,8 +87,10 @@ const item = {
 };
 
 const Services = () => {
+  const [showCallModal, setShowCallModal] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
       {/* Hero Section */}
       <div className="relative h-screen min-h-[600px] overflow-hidden">
         {/* Background Image with Overlay */}
@@ -197,7 +201,7 @@ const Services = () => {
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {serviceCategories.map((service, index) => (
+          {serviceCategories.map((service) => (
             <motion.div 
               key={service.id}
               variants={item}
@@ -205,6 +209,7 @@ const Services = () => {
               className="group"
             >
               <ServiceCard
+                id={service.id}
                 title={service.title}
                 description={service.description}
                 images={service.images}
@@ -234,15 +239,18 @@ const Services = () => {
             >
               Contactez-nous
             </Link>
-            <a 
-              href="tel:+212612345678"
+            <button 
+              onClick={() => setShowCallModal(true)}
               className="px-8 py-3 border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
             >
               Appelez-nous
-            </a>
+            </button>
           </div>
         </div>
       </section>
+
+      {/* Modal d'appel */}
+      <CallModal isOpen={showCallModal} onClose={() => setShowCallModal(false)} />
     </div>
   );
 };

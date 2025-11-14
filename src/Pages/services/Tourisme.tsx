@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SearchBar from '../../components/SearchBar';
+import ServiceHero from '../../components/ServiceHero';
 import ServiceCard from '@/components/ServiceCard';
+import { supabase } from '../../lib/supabase';
+import toast from 'react-hot-toast';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface Voyage {
   id: string;
@@ -58,11 +63,112 @@ const ImageSlider = ({ images }: { images: string[] }) => {
 };
 
 const Tourisme = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [villes, setVilles] = useState<Ville[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadCircuits();
+  }, []);
+
+  const loadCircuits = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Charger les circuits de la table circuits_touristiques
+      const { data: circuitsData, error: circuitsError } = await supabase
+        .from('circuits_touristiques')
+        .select('*')
+        .eq('available', true)
+        .order('featured', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (circuitsError) throw circuitsError;
+
+      // Charger les circuits des partenaires depuis partner_products
+      const { data: partnerCircuits, error: partnerError } = await supabase
+        .from('partner_products')
+        .select(`
+          *,
+          partner:profiles(company_name)
+        `)
+        .eq('available', true)
+        .eq('product_type', 'circuit')
+        .order('created_at', { ascending: false });
+
+      if (partnerError) throw partnerError;
+
+      // Grouper les circuits par ville
+      const villesMap: { [key: string]: Ville } = {};
+      
+      // Ajouter les circuits de la table circuits_touristiques
+      circuitsData?.forEach((circuit: any) => {
+        const cityName = circuit.city || 'Autres';
+        
+        if (!villesMap[cityName]) {
+          villesMap[cityName] = {
+            id: cityName.toLowerCase(),
+            name: cityName,
+            image: circuit.images?.[0] || '/assets/hero/hero1.jpg',
+            description: `Découvrez ${cityName}`,
+            voyages: []
+          };
+        }
+
+        villesMap[cityName].voyages.push({
+          id: circuit.id,
+          title: circuit.title,
+          description: circuit.description || '',
+          images: circuit.images || ['/assets/hero/hero1.jpg'],
+          price: circuit.price_per_person,
+          rating: 4.5,
+          duration: `${circuit.duration_days} jours`,
+          tags: circuit.highlights || [],
+          city: cityName.toLowerCase()
+        });
+      });
+
+      // Ajouter les circuits des partenaires
+      partnerCircuits?.forEach((product: any) => {
+        const cityName = product.city || 'Autres';
+        
+        if (!villesMap[cityName]) {
+          villesMap[cityName] = {
+            id: cityName.toLowerCase(),
+            name: cityName,
+            image: product.main_image || '/assets/hero/hero1.jpg',
+            description: `Découvrez ${cityName}`,
+            voyages: []
+          };
+        }
+
+        villesMap[cityName].voyages.push({
+          id: product.id,
+          title: product.title,
+          description: product.description || '',
+          images: [product.main_image, ...(product.images || [])].filter(Boolean),
+          price: product.price,
+          rating: 4.5,
+          duration: '3 jours', // Durée par défaut pour les circuits partenaires
+          tags: product.amenities || [],
+          city: cityName.toLowerCase()
+        });
+      });
+
+      setVilles(Object.values(villesMap));
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des circuits:', error);
+      toast.error('Erreur lors du chargement des circuits');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
-  // Données des villes et leurs voyages associés
-  const [villes, setVilles] = useState<Ville[]>([
+  // Données remplacées par Supabase - CODE SUPPRIMÉ
+  /*
+  const villes_OLD: Ville[] = [
     {
       id: '²',
       name: 'Marrakech',
@@ -489,7 +595,8 @@ const Tourisme = () => {
         }
       ]
     }
-  ]);
+  ];
+  */
 
   // Fonction pour ajouter une nouvelle ville
   const ajouterVille = (nouvelleVille: Omit<Ville, 'id'>) => {
@@ -523,20 +630,33 @@ const Tourisme = () => {
     )
   );
 
-  // Obtenir les voyages de la ville sélectionnée ou tous les voyages
-  const voyagesAAfficher = selectedCity
-    ? villes.find(v => v.id === selectedCity)?.voyages || []
-    : filteredVilles.flatMap(ville => ville.voyages);
+// Obtenir les voyages de la ville sélectionnée ou tous les voyages
+const voyagesAAfficher = selectedCity
+  ? villes.find(v => v.id === selectedCity)?.voyages || []
+  : filteredVilles.flatMap(ville => ville.voyages);
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 mb-10">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-8xl font-extrabold text-gray-900 mb-10">Découvrez le Maroc</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Explorez nos circuits touristiques à travers les plus belles villes du Maroc
-          </p>
-        </div>
+// Images pour le hero (comme la page d'accueil)
+const heroImages = [
+  '/assets/hero/A.jpg',
+  '/assets/hero/B.jpg',
+  '/assets/hero/C.jpg',
+  '/assets/hero/D.jpg'
+];
+
+const handleHeroSearch = (query: string) => {
+  setSearchTerm(query);
+};
+
+return (
+  <div className="min-h-screen bg-gray-50">
+    <ServiceHero
+      title="Découvrez le Maroc"
+      subtitle="Explorez nos circuits touristiques à travers les plus belles villes du Maroc. Des expériences authentiques et inoubliables vous attendent."
+      images={heroImages}
+      searchPlaceholder="Rechercher une destination, un circuit..."
+      onSearch={handleHeroSearch}
+    />
+    <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
 
         <div className="mb-8">
           <SearchBar 
@@ -550,7 +670,7 @@ const Tourisme = () => {
         <div className="flex flex-wrap gap-4 mb-8 justify-center">
           <button
             onClick={() => setSelectedCity(null)}
-            className={`px-4 py-2 rounded-full ${!selectedCity ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+            className={`px-4 py-2 rounded-full ${!selectedCity ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
           >
             Toutes les destinations
           </button>
@@ -558,7 +678,7 @@ const Tourisme = () => {
             <button
               key={ville.id}
               onClick={() => setSelectedCity(ville.id)}
-              className={`px-4 py-2 rounded-full ${selectedCity === ville.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              className={`px-4 py-2 rounded-full ${selectedCity === ville.id ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
             >
               {ville.name}
             </button>
@@ -575,18 +695,26 @@ const Tourisme = () => {
                   <h2 className="text-2xl font-bold text-gray-900">{ville.name}</h2>
                   <button 
                     onClick={() => setSelectedCity(ville.id)}
-                    className="ml-4 text-sm text-blue-600 hover:text-blue-800"
+                    className="ml-4 text-sm text-emerald-600 hover:text-emerald-800"
                   >
                     Voir tout ({ville.voyages.length})
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {ville.voyages.slice(0, 3).map((voyage) => (
-                    <div key={voyage.id}>
-                      <ImageSlider images={voyage.images} />
-                      <h3 className="text-lg font-bold text-gray-900 mt-4">{voyage.title}</h3>
-                      <p className="text-gray-600">{voyage.description}</p>
-                      <p className="text-gray-600">Prix : {voyage.price} MAD</p>
+                    <div key={voyage.id} className="relative h-full">
+                      <ServiceCard
+                        id={voyage.id}
+                        title={voyage.title}
+                        description={voyage.description}
+                        images={voyage.images}
+                        price={voyage.price}
+                        rating={voyage.rating}
+                        duration={voyage.duration}
+                        tags={voyage.tags}
+                        link={`/tourisme/${voyage.id}/reserver`}
+                        className="h-full flex flex-col"
+                      />
                     </div>
                   ))}
                 </div>
@@ -594,7 +722,7 @@ const Tourisme = () => {
                   <div className="text-center mt-6">
                     <button 
                       onClick={() => setSelectedCity(ville.id)}
-                      className="px-6 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+                      className="px-6 py-2 border border-blue-600 text-emerald-600 rounded-md hover:bg-emerald-50 transition-colors"
                     >
                       Voir les {ville.voyages.length - 3} autres offres à {ville.name}
                     </button>
@@ -608,7 +736,7 @@ const Tourisme = () => {
           <div>
             <button 
               onClick={() => setSelectedCity(null)}
-              className="flex items-center text-blue-600 mb-6 hover:text-blue-800"
+              className="flex items-center text-emerald-600 mb-6 hover:text-emerald-800"
             >
               <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -622,12 +750,18 @@ const Tourisme = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {voyagesAAfficher.map((voyage) => (
-                <div key={voyage.id}>
-                  <ImageSlider images={voyage.images} />
-                  <h3 className="text-lg font-bold text-gray-900 mt-4">{voyage.title}</h3>
-                  <p className="text-gray-600">{voyage.description}</p>
-                  <p className="text-gray-600">Prix : {voyage.price} MAD</p>
-                </div>
+                <ServiceCard
+                  key={voyage.id}
+                  id={voyage.id}
+                  title={voyage.title}
+                  description={voyage.description}
+                  images={voyage.images}
+                  price={voyage.price}
+                  rating={voyage.rating}
+                  duration={voyage.duration}
+                  tags={voyage.tags}
+                  link={`/tourisme/${voyage.id}/reserver`}
+                />
               ))}
             </div>
           </div>
