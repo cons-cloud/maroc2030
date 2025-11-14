@@ -9,21 +9,38 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
+.pnp
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Build outputs
 dist
 dist-ssr
-*.local
+build
+.next
+out
+.nuxt
+.cache
+.temp
+.tmp
 
 # Environment variables
 .env
-.env.local
-.env.production
-.env.development
+.env.*
+!.env.example
 
-# Editor directories and files
+# Local development
+*.local
+.vercel
+.netlify
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
@@ -33,10 +50,102 @@ dist-ssr
 # Supabase
 .supabase
 
-# Build files
-build/
+# TypeScript build info
 *.tsbuildinfo
 
 # OS files
-Thumbs.db
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development
+.cache
+.parcel-cache
+.eslintcache
+
+# Misc
+.cache-loader
+.vercel
+.netlify
+.svelte-kit
+.astro
+.env
+
+# IDE
+.idea
+.vscode
+*.sublime-*
+*.code-workspace
+
+# Supabase
+**/supabase/migrations/**/supabase/
+**/supabase/migrations/**/.temp/
+**/supabase/migrations/**/types/
+
+# Local development
+.vercel
+.netlify
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local development
+.vercel
+.netlify
+
+# Build files
+.next
+out
+.nuxt
+.cache
+.temp
+.tmp
+
+# Testing
+coverage
+.nyc_output
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development
+.cache
+.parcel-cache
+.eslintcache
+
+# Misc
+.cache-loader
+.vercel
+.netlify
+.svelte-kit
+.astro
+
+# IDE
+.idea
+.vscode
+*.sublime-*
+*.code-workspace
