@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
-import { Loader2, AlertCircle, Calendar, Users } from 'lucide-react';
+import { Loader2, AlertCircle, Calendar } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -37,41 +37,96 @@ const ClientBookings = () => {
       setLoading(true);
       setError(null);
       
-      if (!user?.id) return;
-
-      // Requête avec jointure sur les services
-      let query = supabase
-        .from('bookings')
-        .select(`
-          *,
-          service:services (
-            id,
-            title,
-            image_url,
-            type
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      // Appliquer le filtre si nécessaire
-      if (filter !== 'all') {
-        query = query.eq('status', filter);
+      if (!user?.id) {
+        console.log('Aucun utilisateur connecté');
+        return;
       }
 
-      const { data: bookingsData, error: bookingsError } = await query;
+      console.log('Récupération des réservations pour l\'utilisateur:', user.id);
+      
+      // 1. Récupérer d'abord les réservations
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('client_id', user.id)  // Correction: utilisation de client_id au lieu de user_id
+        .order('created_at', { ascending: false });
 
-      if (bookingsError) throw bookingsError;
+      console.log('Résultats de la requête bookings:', { bookingsData, bookingsError });
 
-      // Formater les données pour l'affichage
-      const formattedBookings = (bookingsData || []).map((booking: any) => ({
-        ...booking,
-        service_title: booking.service?.title || 'Service inconnu',
-        service_image: booking.service?.image_url || null,
-        service_type: booking.service?.type || 'service'
-      }));
+      if (bookingsError) {
+        console.error('Erreur lors de la récupération des réservations:', bookingsError);
+        throw new Error(`Erreur lors du chargement des réservations: ${bookingsError.message}`);
+      }
 
-      setBookings(formattedBookings);
+      if (!bookingsData || bookingsData.length === 0) {
+        setBookings([]);
+        return;
+      }
+
+      if (!bookingsData || bookingsData.length === 0) {
+        console.log('Aucune réservation trouvée pour cet utilisateur');
+        setBookings([]);
+        return;
+      }
+
+      // 2. Récupérer les IDs des services uniques
+      const serviceIds = bookingsData
+        .map(b => b.service_id)
+        .filter((id): id is string => !!id);
+      
+      console.log('ID utilisateur:', user.id);
+      console.log('Réservations trouvées:', bookingsData);
+      console.log('IDs de services:', serviceIds);
+      
+      console.log('IDs des services à récupérer:', serviceIds);
+
+      let servicesData = [];
+      if (serviceIds.length > 0) {
+        // 3. Récupérer les détails des services
+        const { data: services, error: servicesError } = await supabase
+          .from('services')
+          .select('*')
+          .in('id', serviceIds);
+
+        console.log('Résultats de la requête services:', { services, servicesError });
+
+        if (servicesError) {
+          console.error('Erreur lors de la récupération des services:', servicesError);
+          // On continue même en cas d'erreur, on affichera juste moins d'informations
+        } else if (services) {
+          servicesData = services;
+        }
+      }
+
+      // Créer une map pour un accès rapide aux services par ID
+      const servicesMap = new Map(servicesData.map(service => [service.id, service]));
+
+      console.log('Services chargés:', servicesMap.size);
+
+      // 4. Combiner les données
+      const formattedBookings = bookingsData.map(booking => {
+        const service = booking.service_id ? servicesMap.get(booking.service_id) : null;
+        return {
+          ...booking,
+          service_title: service?.title || 'Service inconnu',
+          service_image: service?.image_url || null,
+          service_type: service?.type || 'service',
+          // Assurez-vous que ces champs existent dans votre objet booking
+          start_date: booking.start_date || booking.created_at,
+          end_date: booking.end_date || null,
+          total_price: booking.total_price || 0,
+          status: booking.status || 'pending'
+        };
+      });
+
+      console.log('Réservations formatées:', formattedBookings);
+
+      // 5. Appliquer le filtre si nécessaire
+      const filteredBookings = filter === 'all' 
+        ? formattedBookings 
+        : formattedBookings.filter(booking => booking.status === filter);
+
+      setBookings(filteredBookings);
       
     } catch (err) {
       console.error('Erreur lors du chargement des réservations:', err);

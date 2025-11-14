@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ProductForm from '../../components/forms/ProductForm';
 import toast from 'react-hot-toast';
 import { Package, Home, Building2, Car, Palmtree, Plus } from 'lucide-react';
+import type { Service, ServiceType } from '../../types/supabase';
 
 interface PartnerStats {
   total_products: number;
@@ -19,36 +20,28 @@ interface PartnerStats {
   average_rating: number;
 }
 
-interface Product {
-  id: string;
-  title: string;
-  product_type: string;
-  price: number;
-  city: string;
+type Product = Omit<Service, 'type'> & {
+  product_type: ServiceType;
+  main_image: string;
+  bookings_count: number;
   available: boolean;
   views: number;
-  bookings_count: number;
   rating: number;
-  main_image: string;
-  created_at: string;
-}
+};
 
-interface Booking {
-  id: string;
-  service_title: string;
-  client_name: string;
-  client_email: string;
-  client_phone: string;
-  start_date: string;
-  end_date: string;
-  amount: number;
-  payment_status: string;
-  booking_status: string;
-  partner_paid: boolean;
-  partner_paid_at: string;
-  created_at: string;
-  earning_status: string;
-}
+// Type de réservation (commenté car non utilisé pour le moment)
+// type Booking = BookingType & {
+//   service_title: string;
+//   client_name: string;
+//   client_email: string;
+//   client_phone: string;
+//   amount: number;
+//   payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+//   booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+//   partner_paid: boolean;
+//   partner_paid_at: string | null;
+//   earning_status: 'pending' | 'available' | 'paid';
+// };
 
 const PartnerDashboard: React.FC = () => {
   const { user, profile } = useAuth();
@@ -56,10 +49,12 @@ const PartnerDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  // État pour les réservations (commenté car non utilisé pour le moment)
+  // const [bookings, setBookings] = useState<Booking[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bookings' | 'earnings' | 'profile'>('overview');
+  // Gestion des onglets et filtres
+  const [_, setActiveTab] = useState<'overview' | 'products' | 'bookings' | 'earnings' | 'profile'>('overview');
   const [productFilter, setProductFilter] = useState<string>('all');
 
   // Fonction utilitaire pour obtenir l'onglet actif depuis l'URL
@@ -95,16 +90,16 @@ const PartnerDashboard: React.FC = () => {
         .eq('partner_id', user.id)
         .order('created_at', { ascending: false });
       
-      // Charger les réservations
-      const { data: bookingsData } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('partner_id', user.id)
-        .order('created_at', { ascending: false });
+      // Charger les réservations (commenté car non utilisé pour le moment)
+      // const { data: bookingsData } = await supabase
+      //   .from('bookings')
+      //   .select('*')
+      //   .eq('partner_id', user.id)
+      //   .order('created_at', { ascending: false });
       
       setStats(statsData as PartnerStats);
       setProducts(productsData || []);
-      setBookings(bookingsData || []);
+      // setBookings(bookingsData || []);
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
       toast.error('Erreur lors du chargement des données');

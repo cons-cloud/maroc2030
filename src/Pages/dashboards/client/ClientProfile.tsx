@@ -109,11 +109,10 @@ const ClientProfileComponent = () => {
   };
 
   // Afficher un écran de chargement pendant le chargement des données d'authentification
-  // Afficher un écran de chargement pendant le chargement des données d'authentification
   if (authLoading) {
     console.log('[ClientProfile] Affichage du chargeur de chargement');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-green-50">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-emerald-50 to-green-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement de votre profil...</p>
@@ -161,13 +160,13 @@ const ClientProfileComponent = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 pt-24 pb-12">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 to-green-50 pt-24 pb-12">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm p-6 mb-6">
               <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-r from-primary to-green-600 flex items-center justify-center text-white text-2xl font-bold">
+                <div className="w-20 h-20 rounded-full bg-linear-to-r from-primary to-green-600 flex items-center justify-center text-white text-2xl font-bold">
                   {formData.email.charAt(0).toUpperCase()}
                 </div>
                 <div>

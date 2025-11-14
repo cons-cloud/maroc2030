@@ -1,161 +1,87 @@
 import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import React from 'react';
 
 // Types
-type RouteConfig = Omit<RouteObject, 'children'> & {
+type RouteConfig = Omit<RouteObject, 'children' | 'element'> & {
   children?: RouteConfig[];
-  role?: string;
+  role?: 'admin' | 'partner' | 'client';
+  element?: ReactNode;
 };
 
 // Layouts
-const PublicLayout = lazy(() => import('../layouts/PublicLayout'));
-const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
+const PublicLayout = lazy(() => import('../components/layouts/PublicLayout'));
+const DashboardLayout = lazy(() => import('../components/layouts/DashboardLayout'));
 
-// Pages publiques
+// Pages de base
 const Home = lazy(() => import('../Pages/Home'));
 const Login = lazy(() => import('../Pages/Login'));
 const Inscription = lazy(() => import('../Pages/Inscription'));
 const Services = lazy(() => import('../Pages/Services'));
-const Tourisme = lazy(() => import('../Pages/Tourisme'));
-const Voitures = lazy(() => import('../Pages/Voitures'));
-const Appartements = lazy(() => import('../Pages/Appartements'));
-const Villas = lazy(() => import('../Pages/Villas'));
-const Hotels = lazy(() => import('../Pages/Hotels'));
-const Guides = lazy(() => import('../Pages/Guides'));
-const Activites = lazy(() => import('../Pages/Activites'));
-const Evenements = lazy(() => import('../Pages/Evenements'));
-const Immobilier = lazy(() => import('../Pages/Immobilier'));
-const Annonces = lazy(() => import('../Pages/Annonces'));
-const Apropos = lazy(() => import('../Pages/Apropos'));
-const Contact = lazy(() => import('../Pages/Contact'));
-const Recherche = lazy(() => import('../Pages/Recherche'));
-const PageNotFound = lazy(() => import('../components/PageNotFound'));
+const PageNotFound = lazy(() => import('../components/common/PageNotFound'));
 
 // Tableaux de bord
-// Admin
-const AdminDashboard = lazy(() => import('../Pages/dashboards/admin/AdminDashboard'));
-const UsersManagement = lazy(() => import('../Pages/dashboards/admin/UsersManagement'));
-const PartnersManagement = lazy(() => import('../Pages/dashboards/admin/PartnersManagement'));
-const BookingsManagement = lazy(() => import('../Pages/dashboards/admin/BookingsManagement'));
-const PaymentsManagement = lazy(() => import('../Pages/dashboards/admin/PaymentsManagement'));
-const ServicesManagement = lazy(() => import('../Pages/dashboards/admin/ServicesManagement'));
-const MessagesManagement = lazy(() => import('../Pages/dashboards/admin/MessagesManagement'));
-
-// Partenaire
-const PartnerDashboard = lazy(() => import('../Pages/dashboards/partner/PartnerDashboard'));
-const PartnerEvents = lazy(() => import('../Pages/dashboards/partner/PartnerEvents'));
-const PartnerAnnonces = lazy(() => import('../Pages/dashboards/partner/PartnerAnnonces'));
-const PartnerProfile = lazy(() => import('../Pages/dashboards/partner/PartnerProfile'));
-const PartnerSettings = lazy(() => import('../Pages/dashboards/partner/PartnerSettings'));
-
-// Client
-const ClientDashboard = lazy(() => import('../Pages/dashboards/client/ClientDashboard'));
-const ClientBookings = lazy(() => import('../Pages/dashboards/client/ClientBookings'));
-const ClientProfile = lazy(() => import('../Pages/dashboards/client/ClientProfile'));
-const ClientSettings = lazy(() => import('../Pages/dashboards/client/ClientSettings'));
+const Dashboard = () => React.createElement('div', null, 'Tableau de bord');
 
 // Fonction utilitaire pour créer des routes avec typage fort
-const createRoute = (config: RouteConfig): RouteConfig => config;
+const createRoute = (config: RouteConfig): RouteConfig => ({
+  ...config,
+  children: config.children?.map(child => ({
+    ...child,
+    role: undefined, // S'assurer que les enfants n'ont pas de rôle défini
+  })),
+});
 
 // Routes publiques
 export const publicRoutes: RouteConfig[] = [
-  createRoute({
+  {
     path: '/',
     element: React.createElement(PublicLayout),
     children: [
-      createRoute({ path: '/', element: React.createElement(Home) }),
-      createRoute({ path: '/services', element: React.createElement(Services) }),
-      createRoute({ path: '/services/tourisme', element: React.createElement(Tourisme) }),
-      createRoute({ path: '/services/voitures', element: React.createElement(Voitures) }),
-      createRoute({ path: '/services/appartements', element: React.createElement(Appartements) }),
-      createRoute({ path: '/services/villas', element: React.createElement(Villas) }),
-      createRoute({ path: '/services/hotels', element: React.createElement(Hotels) }),
-      createRoute({ path: '/services/guides', element: React.createElement(Guides) }),
-      createRoute({ path: '/services/activites', element: React.createElement(Activites) }),
-      createRoute({ path: '/services/evenements', element: React.createElement(Evenements) }),
-      createRoute({ path: '/immobilier', element: React.createElement(Immobilier) }),
-      createRoute({ path: '/evenements', element: React.createElement(Evenements) }),
-      createRoute({ path: '/annonces', element: React.createElement(Annonces) }),
-      createRoute({ path: '/apropos', element: React.createElement(Apropos) }),
-      createRoute({ path: '/contact', element: React.createElement(Contact) }),
-      createRoute({ path: '/recherche', element: React.createElement(Recherche) }),
-      createRoute({ path: '/login', element: React.createElement(Login) }),
-      createRoute({ path: '/inscription', element: React.createElement(Inscription) }),
-      createRoute({ path: '*', element: React.createElement(PageNotFound) }),
+      { index: true, element: React.createElement(Home) },
+      { path: 'services', element: React.createElement(Services) },
+      { path: 'login', element: React.createElement(Login) },
+      { path: 'inscription', element: React.createElement(Inscription) },
+      { path: '*', element: React.createElement(PageNotFound) },
     ],
-  }),
+  },
 ];
 
-// Routes administrateur
-export const adminRoutes: RouteConfig[] = [
-  createRoute({
+// Routes protégées
+export const protectedRoutes: RouteConfig[] = [
+  // Admin
+  {
     path: '/dashboard/admin',
     element: React.createElement(DashboardLayout, { role: 'admin' }),
-    role: 'admin',
     children: [
-      createRoute({ path: '', element: React.createElement(AdminDashboard) }),
-      createRoute({ path: 'users', element: React.createElement(UsersManagement) }),
-      createRoute({ path: 'partners', element: React.createElement(PartnersManagement) }),
-      createRoute({ path: 'bookings', element: React.createElement(BookingsManagement) }),
-      createRoute({ path: 'messages', element: React.createElement(MessagesManagement) }),
-      createRoute({ path: 'payments', element: React.createElement(PaymentsManagement) }),
-      createRoute({ path: 'services', element: React.createElement(ServicesManagement) }),
-      createRoute({ 
-        path: '*',
-        element: React.createElement('div', { className: 'p-4 text-center' },
-          React.createElement('h2', { className: 'text-xl font-bold' }, "Page d'administration non trouvée")
-        )
-      }),
+      { index: true, element: React.createElement(Dashboard) },
     ],
-  }),
-];
-
-// Routes partenaire
-export const partnerRoutes: RouteConfig[] = [
-  createRoute({
+  },
+  // Partenaire
+  {
     path: '/dashboard/partner',
     element: React.createElement(DashboardLayout, { role: 'partner' }),
-    role: 'partner',
     children: [
-      createRoute({ path: '', element: React.createElement(PartnerDashboard) }),
-      createRoute({ path: 'evenements', element: React.createElement(PartnerEvents) }),
-      createRoute({ path: 'annonces', element: React.createElement(PartnerAnnonces) }),
-      createRoute({ path: 'profil', element: React.createElement(PartnerProfile) }),
-      createRoute({ path: 'parametres', element: React.createElement(PartnerSettings) }),
-      createRoute({
-        path: '*',
-        element: React.createElement('div', { className: 'p-4 text-center' },
-          React.createElement('h2', { className: 'text-xl font-bold' }, 'Page partenaire non trouvée')
-        )
-      }),
+      { index: true, element: React.createElement(Dashboard) },
+      { path: 'evenements', element: React.createElement(Dashboard) },
+      { path: 'profil', element: React.createElement(Dashboard) },
     ],
-  }),
-];
-
-// Routes client
-export const clientRoutes: RouteConfig[] = [
-  createRoute({
+  },
+  // Client
+  {
     path: '/dashboard/client',
     element: React.createElement(DashboardLayout, { role: 'client' }),
-    role: 'client',
     children: [
-      createRoute({ path: '', element: React.createElement(ClientDashboard) }),
-      createRoute({ path: 'reservations', element: React.createElement(ClientBookings) }),
-      createRoute({ path: 'profil', element: React.createElement(ClientProfile) }),
-      createRoute({ path: 'parametres', element: React.createElement(ClientSettings) }),
-      createRoute({
-        path: '*',
-        element: React.createElement('div', { className: 'p-4 text-center' },
-          React.createElement('h2', { className: 'text-xl font-bold' }, 'Page client non trouvée')
-        )
-      }),
+      { index: true, element: React.createElement(Dashboard) },
+      { path: 'reservations', element: React.createElement(Dashboard) },
+      { path: 'profil', element: React.createElement(Dashboard) },
     ],
-  }),
+  },
 ];
 
 // Redirections après connexion
-export const redirectAfterLogin: Record<string, string> = {
+export const redirectAfterLogin = {
   admin: '/dashboard/admin',
   partner: '/dashboard/partner',
   client: '/dashboard/client',
@@ -177,22 +103,18 @@ export const isProtectedPath = (pathname: string): boolean => {
 // Récupère la redirection appropriée en fonction du rôle de l'utilisateur
 export const getRedirectPath = (userRole?: string): string => {
   if (!userRole) return '/login';
-  return redirectAfterLogin[userRole] || redirectAfterLogin.default;
+  return redirectAfterLogin[userRole as keyof typeof redirectAfterLogin] || redirectAfterLogin.default;
 };
 
-// Exporte toutes les routes combinées
+// Toutes les routes
 export const allRoutes: RouteConfig[] = [
   ...publicRoutes,
-  ...adminRoutes,
-  ...partnerRoutes,
-  ...clientRoutes,
+  ...protectedRoutes,
 ];
 
 export default {
   publicRoutes,
-  adminRoutes,
-  partnerRoutes,
-  clientRoutes,
+  protectedRoutes,
   allRoutes,
   redirectAfterLogin,
   protectedPaths,

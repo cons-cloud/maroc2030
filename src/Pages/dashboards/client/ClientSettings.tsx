@@ -3,7 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import Navbar from '../../../components/Navbar';
 import Footer from '../../../components/Footer';
-import { Lock, Mail, Bell, Shield, Trash2, Save, Loader, Eye, EyeOff } from 'lucide-react';
+import { Lock, Bell, Shield, Trash2, Save, Loader, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -108,7 +108,7 @@ const ClientSettings = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 pt-24 pb-12">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 to-green-50 pt-24 pb-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {/* Header */}

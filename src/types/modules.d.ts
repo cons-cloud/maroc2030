@@ -1,0 +1,21 @@
+// Déclarations pour les modules qui n'ont pas de types TypeScript
+declare module 'react-hot-toast';
+declare module 'react-lazy-load-image-component';
+declare module 'react-slick';
+declare module 'slick-carousel';
+declare module 'react-datepicker';
+declare module 'react-phone-number-input';
+declare module 'react-phone-input-2';
+declare module 'react-currency-input-field';
+declare module 'react-helmet-async';
+declare module 'react-google-maps';
+declare module 'react-google-recaptcha';
+declare module 'react-google-autocomplete';
+declare module 'react-share';
+declare module 'react-slick';
+declare module 'slick-carousel/slick/slick.css';
+declare module 'slick-carousel/slick/slick-theme.css';
+declare module 'react-datepicker/dist/react-datepicker.css';
+declare module 'react-phone-input-2/lib/style.css';
+declare module 'react-phone-number-input/style.css';
+declare module 'react-phone-input-2/lib/bootstrap.css';

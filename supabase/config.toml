@@ -1,0 +1,15 @@
+[api]
+# L'URL de votre projet Supabase
+project_id = "tazs-projects-02a067b5"
+
+[db]
+# Configuration de la base de données
+port = 5432
+
+[studio]
+# Configuration du studio Supabase
+port = 3000
+
+[inbucket]
+# Configuration d'Inbucket pour les emails
+port = 54324

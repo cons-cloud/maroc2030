@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import { 
-  Home, Calendar, Package, CreditCard, Settings, Users, BarChart2, 
-  Plus, ArrowRight, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, TrendingUp
-} from 'lucide-react';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
+import { DollarSign, TrendingUp, Clock, CreditCard, CheckCircle, XCircle, AlertCircle, Plus, Package, ArrowRight } from 'lucide-react';
+import { Line, Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 
 // Enregistrer les composants de Chart.js
 ChartJS.register(
@@ -15,7 +12,6 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
   ArcElement,
   Title,
   Tooltip,
@@ -56,8 +52,47 @@ const PartnerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Données pour les graphiques
+  const revenueData = {
+    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+    datasets: [
+      {
+        label: 'Revenu total',
+        data: [12000, 19000, 3000, 5000, 2000, 3000],
+        borderColor: 'rgb(53, 162, 235)',
+        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        tension: 0.3,
+      },
+      {
+        label: 'Gains (après commission)',
+        data: [10800, 17100, 2700, 4500, 1800, 2700],
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        tension: 0.3,
+      },
+    ],
+  };
+
+  const bookingStatusData = {
+    labels: ['Confirmées', 'En attente', 'Annulées'],
+    datasets: [
+      {
+        data: [70, 20, 10],
+        backgroundColor: [
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(255, 206, 86, 0.6)',
+          'rgba(255, 99, 132, 0.6)',
+        ],
+        borderColor: [
+          'rgba(75, 192, 192, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(255, 99, 132, 1)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+  const [recentBookings, setRecentBookings] = useState<Array<RecentBooking & { product_title: string }>>([]);
 
   // Charger les données du tableau de bord
   useEffect(() => {
@@ -97,7 +132,7 @@ const PartnerDashboard: React.FC = () => {
         setStats(statsData[0]);
         setRecentBookings(bookingsData.map(booking => ({
           ...booking,
-          product_title: booking.product?.title || 'Produit inconnu'
+          product_title: (booking as any).product?.title || 'Produit inconnu'
         })));
         
       } catch (error) {
@@ -112,51 +147,6 @@ const PartnerDashboard: React.FC = () => {
     }
   }, [user?.id]);
 
-  // Données pour les graphiques
-  const revenueData = {
-    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
-    datasets: [
-      {
-        label: 'Revenu total',
-        data: [12000, 19000, 3000, 5000, 2000, 3000],
-        borderColor: 'rgb(53, 162, 235)',
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
-        tension: 0.3,
-      },
-      {
-        label: 'Gains (après commission)',
-        data: [10800, 17100, 2700, 4500, 1800, 2700],
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-        tension: 0.3,
-      },
-    ],
-  };
-
-  const bookingStatusData = {
-    labels: ['Confirmées', 'Terminées', 'Annulées'],
-    datasets: [
-      {
-        data: [
-          stats?.confirmed_bookings || 0,
-          stats?.completed_bookings || 0,
-          stats?.cancelled_bookings || 0,
-        ],
-        backgroundColor: [
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(255, 99, 132, 0.7)',
-        ],
-        borderColor: [
-          'rgb(54, 162, 235)',
-          'rgb(75, 192, 192)',
-          'rgb(255, 99, 132)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
-
   // Options pour les graphiques
   const lineChartOptions = {
     responsive: true,
@@ -165,7 +155,7 @@ const PartnerDashboard: React.FC = () => {
         position: 'top' as const,
       },
       title: {
-        display: true,
+        display: false,
         text: 'Revenus mensuels',
       },
     },
@@ -173,13 +163,20 @@ const PartnerDashboard: React.FC = () => {
       y: {
         beginAtZero: true,
         ticks: {
-          callback: (value: number) => `${value} DH`,
+          callback: (tickValue: string | number) => {
+            const value = typeof tickValue === 'string' ? parseFloat(tickValue) : tickValue;
+            return new Intl.NumberFormat('fr-MA', {
+              style: 'currency',
+              currency: 'MAD',
+              minimumFractionDigits: 2,
+            }).format(value);
+          },
         },
       },
     },
   };
 
-  const doughnutOptions = {
+  const doughnutChartOptions = {
     responsive: true,
     plugins: {
       legend: {
@@ -268,7 +265,7 @@ const PartnerDashboard: React.FC = () => {
         <div className="overflow-hidden bg-white rounded-lg shadow">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 p-3 rounded-md bg-blue-50">
+              <div className="shrink-0 p-3 rounded-md bg-blue-50">
                 <DollarSign className="w-6 h-6 text-blue-600" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -289,7 +286,7 @@ const PartnerDashboard: React.FC = () => {
         <div className="overflow-hidden bg-white rounded-lg shadow">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 p-3 rounded-md bg-green-50">
+              <div className="shrink-0 p-3 rounded-md bg-green-50">
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -312,7 +309,7 @@ const PartnerDashboard: React.FC = () => {
         <div className="overflow-hidden bg-white rounded-lg shadow">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 p-3 rounded-md bg-purple-50">
+              <div className="shrink-0 p-3 rounded-md bg-purple-50">
                 <CreditCard className="w-6 h-6 text-purple-600" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -335,7 +332,7 @@ const PartnerDashboard: React.FC = () => {
         <div className="overflow-hidden bg-white rounded-lg shadow">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 p-3 rounded-md bg-yellow-50">
+              <div className="shrink-0 p-3 rounded-md bg-yellow-50">
                 <Clock className="w-6 h-6 text-yellow-600" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -363,7 +360,7 @@ const PartnerDashboard: React.FC = () => {
         {/* Graphique des réservations */}
         <div className="p-6 bg-white rounded-lg shadow">
           <div className="h-full">
-            <Doughnut data={bookingStatusData} options={doughnutOptions} />
+            <Doughnut data={bookingStatusData} options={doughnutChartOptions} />
           </div>
         </div>
       </div>
@@ -399,7 +396,7 @@ const PartnerDashboard: React.FC = () => {
                              booking.status === 'cancelled' ? 'Annulée' : 'En attente'}
                           </span>
                         </div>
-                        <div className="flex-shrink-0 ml-2">
+                        <div className="shrink-0 ml-2">
                           <p className="text-sm font-medium text-gray-900">
                             {formatCurrency(booking.partner_amount)}
                             <span className="text-xs text-gray-500 ml-1">(net)</span>
@@ -454,7 +451,7 @@ const PartnerDashboard: React.FC = () => {
             <div key={item} className="overflow-hidden bg-white rounded-lg shadow">
               <div className="p-5">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0 p-3 rounded-md bg-gray-50">
+                  <div className="shrink-0 p-3 rounded-md bg-gray-50">
                     <Package className="w-6 h-6 text-gray-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
@@ -467,7 +464,7 @@ const PartnerDashboard: React.FC = () => {
                           {item * 5} réservations
                         </div>
                         <div className="ml-2 flex items-baseline text-sm font-semibold text-green-600">
-                          <ArrowRight className="self-center flex-shrink-0 h-4 w-4 text-green-500" />
+                          <ArrowRight className="self-center shrink-0 h-4 w-4 text-green-500" />
                           <span className="sr-only">Augmenté de</span>
                           {item * 2}%
                         </div>
