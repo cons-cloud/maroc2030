@@ -44,15 +44,37 @@ export default function Login() {
     try {
       const { role } = await signIn(email, password);
       
-      // Vérifier s'il y a des données de réservation en attente
+      // Vérifier s'il y a une réservation en attente dans le sessionStorage
+      const pendingReservation = sessionStorage.getItem('pendingReservation');
+      
+      if (pendingReservation) {
+        const { eventId } = JSON.parse(pendingReservation);
+        // Revenir à la page précédente qui va gérer la réouverture du formulaire
+        navigate(-1);
+        return;
+      }
+
+      // Vérifier s'il y a des données de réservation dans l'état de navigation
       const locationState = location.state as { 
-        from?: string; 
+        from?: string;
+        fromReservation?: boolean;
         reservationData?: any;
-        message?: string;
       };
 
+      // Si l'utilisateur venait d'une réservation
+      if (locationState?.fromReservation) {
+        // Revenir à la page d'où il venait
+        navigate(locationState.from || '/', { 
+          state: { 
+            fromLogin: true,
+            fromReservation: true
+          } 
+        });
+        return;
+      }
+      
+      // Gestion du paiement (existant)
       if (locationState?.from === ROUTES.PAYMENT && locationState.reservationData) {
-        // Rediriger vers la page de paiement avec les données de réservation
         navigate(ROUTES.PAYMENT, {
           state: {
             ...locationState.reservationData,

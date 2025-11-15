@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { X, LogIn, UserPlus } from 'lucide-react';
 
 interface AuthGuardProps {
@@ -11,8 +11,33 @@ interface AuthGuardProps {
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, onAuthRequired }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
+  // Vérifier si l'utilisateur s'est connecté pendant que la modale était ouverte
+  useEffect(() => {
+    if (user && pendingAction) {
+      // Exécuter l'action en attente
+      pendingAction();
+      setPendingAction(null);
+      setShowAuthModal(false);
+    }
+  }, [user, pendingAction]);
+
+  // Empêcher le défilement du fond lorsque la modale est ouverte
+  useEffect(() => {
+    if (showAuthModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAuthModal]);
+
+  
   return (
     <>
       {React.Children.map(children, (child) => {
@@ -24,6 +49,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, onAuthRequired }) => {
             onClick: (e: React.MouseEvent) => {
               if (!user) {
                 e.preventDefault();
+                e.stopPropagation();
                 setShowAuthModal(true);
                 if (onAuthRequired) onAuthRequired();
               } else if (originalOnClick) {
@@ -61,8 +87,26 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, onAuthRequired }) => {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  setShowAuthModal(false);
-                  navigate('/login', { state: { from: window.location.pathname } });
+                  // Enregistrer l'action à effectuer après la connexion
+                  setPendingAction(() => {
+                    const pendingReservation = sessionStorage.getItem('pendingReservation');
+                    if (pendingReservation) {
+                      const { eventId } = JSON.parse(pendingReservation);
+                      return () => {
+                        // Recharger la page pour forcer la réinitialisation du formulaire
+                        window.location.reload();
+                      };
+                    }
+                    return () => {};
+                  });
+                  
+                  // Rediriger vers la page de connexion avec l'état actuel
+                  navigate('/login', { 
+                    state: { 
+                      from: location.pathname,
+                      fromReservation: true
+                    } 
+                  });
                 }}
                 className="w-full flex items-center justify-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-md"
               >

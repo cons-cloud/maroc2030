@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/Footer';
 import { User, Mail, Phone, MapPin, Save, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -319,7 +318,6 @@ const ClientProfileComponent = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 };

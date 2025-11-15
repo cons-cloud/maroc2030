@@ -239,10 +239,9 @@ const Guides = () => {
             id: selectedGuide.id,
             title: selectedGuide.name,
             price: selectedGuide.price_per_day,
-            images: selectedGuide.images,
-            description: selectedGuide.description,
+            price_per_day: selectedGuide.price_per_day
           }}
-          serviceType="guide"
+          serviceType="circuit"
           onClose={() => {
             setShowBookingForm(false);
             setSelectedGuide(null);

@@ -153,8 +153,8 @@ const PartnerProducts: React.FC = () => {
         
         // Trier par date
         if (sortConfig.key === 'created_at' || sortConfig.key === 'updated_at') {
-          aValue = new Date(aValue as string);
-          bValue = new Date(bValue as string);
+          aValue = aValue ? new Date(aValue as string).getTime() : 0;
+          bValue = bValue ? new Date(bValue as string).getTime() : 0;
         }
         
         if (aValue < bValue) {

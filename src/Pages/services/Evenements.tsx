@@ -33,11 +33,7 @@ const Evenements = () => {
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
 
-  useEffect(() => {
-    loadEvenements();
-  }, []);
-
-  const loadEvenements = async () => {
+  const fetchEvenements = async () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
@@ -56,6 +52,26 @@ const Evenements = () => {
     }
   };
 
+  useEffect(() => {
+    fetchEvenements().then(() => {
+      // Vérifier si l'utilisateur revient d'une connexion
+      const pendingReservation = sessionStorage.getItem('pendingReservation');
+      if (pendingReservation) {
+        const { eventId, timestamp } = JSON.parse(pendingReservation);
+        // Vérifier que la réservation a moins de 5 minutes
+        if (new Date().getTime() - timestamp < 5 * 60 * 1000) {
+          const event = evenements.find(e => e.id === eventId);
+          if (event) {
+            setSelectedEvenement(event);
+            setShowBookingForm(true);
+          }
+        }
+        // Nettoyer
+        sessionStorage.removeItem('pendingReservation');
+      }
+    });
+  }, []);
+
   const cities = ['all', ...new Set(evenements.map(e => e.city))];
   const types = ['all', ...new Set(evenements.map(e => e.type))];
   
@@ -66,6 +82,8 @@ const Evenements = () => {
   });
 
   const handleBookEvenement = (evenement: Evenement) => {
+    // Cette fonction ne sera appelée que si l'utilisateur est connecté
+    // grâce au AuthGuard qui entoure le bouton
     setSelectedEvenement(evenement);
     setShowBookingForm(true);
   };
@@ -226,15 +244,13 @@ const Evenements = () => {
                         </span>
                         <span className="text-gray-500 text-sm"> / billet</span>
                       </div>
-                      <AuthGuard>
-                        <button
-                          onClick={() => handleBookEvenement(evenement)}
-                          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2"
-                        >
-                          <Ticket className="w-4 h-4" />
-                          Réserver
-                        </button>
-                      </AuthGuard>
+                      <button
+                        onClick={() => handleBookEvenement(evenement)}
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2"
+                      >
+                        <Ticket className="w-4 h-4" />
+                        Réserver
+                      </button>
                     </div>
                   </div>
                 </motion.div>
@@ -244,21 +260,23 @@ const Evenements = () => {
         </div>
       </div>
 
-      {/* Formulaire de réservation */}
-      {showBookingForm && selectedEvenement && (
-        <UniversalBookingForm
-          service={{
-            id: selectedEvenement.id,
-            title: selectedEvenement.title,
-            price: selectedEvenement.price,
-          }}
-          serviceType="evenement"
-          onClose={() => {
-            setShowBookingForm(false);
-            setSelectedEvenement(null);
-          }}
-        />
-      )}
+      {/* Formulaire de réservation avec AuthGuard */}
+      <AuthGuard>
+        {showBookingForm && selectedEvenement && (
+          <UniversalBookingForm
+            service={{
+              id: selectedEvenement.id,
+              title: selectedEvenement.title,
+              price: selectedEvenement.price,
+            }}
+            serviceType="circuit"
+            onClose={() => {
+              setShowBookingForm(false);
+              setSelectedEvenement(null);
+            }}
+          />
+        )}
+      </AuthGuard>
 
       <Footer />
     </>

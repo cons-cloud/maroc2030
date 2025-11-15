@@ -340,7 +340,11 @@ const LocationsVoituresManagement: FC = () => {
             </div>
             <VoitureForm
               voiture={selectedVoiture}
-              onSubmit={handleSubmitForm}
+              onSuccess={() => {
+                loadVoitures();
+                setShowForm(false);
+                setSelectedVoiture(null);
+              }}
               onClose={() => {
                 setShowForm(false);
                 setSelectedVoiture(null);

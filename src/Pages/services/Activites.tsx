@@ -253,10 +253,10 @@ const Activites = () => {
             id: selectedActivite.id,
             title: selectedActivite.title,
             price: selectedActivite.price,
-            description: selectedActivite.description,
             max_participants: selectedActivite.max_participants,
+            duration_days: selectedActivite.duration ? parseInt(selectedActivite.duration) : 1
           }}
-          serviceType="activite"
+          serviceType="circuit"
           onClose={() => {
             setShowBookingForm(false);
             setSelectedActivite(null);

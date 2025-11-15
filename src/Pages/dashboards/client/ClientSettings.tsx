@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/Footer';
 import { Lock, Bell, Shield, Trash2, Save, Loader, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -292,7 +291,6 @@ const ClientSettings = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 };

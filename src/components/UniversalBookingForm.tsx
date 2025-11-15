@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { X, Calendar, Users, MapPin, Clock, CreditCard, User, Mail, Phone } from 'lucide-react';
+import AuthGuard from './AuthGuard';
 
 type ServiceType = 'appartement' | 'hotel' | 'villa' | 'voiture' | 'circuit';
 
@@ -59,10 +60,14 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
   // Vérifier l'authentification et pré-remplir les données
   useEffect(() => {
     if (!user) {
-      // Utilisateur non connecté, fermer le formulaire et rediriger
-      onClose();
-      toast.error('Vous devez être connecté pour réserver');
-      navigate('/login', { state: { from: window.location.pathname } });
+      // Si l'utilisateur n'est pas connecté, on enregistre les données de réservation dans l'état de navigation
+      const reservationData = {
+        serviceType,
+        service,
+        formData,
+        from: window.location.pathname
+      };
+      // On ne fait rien d'autre ici, AuthGuard va gérer l'affichage du formulaire
       return;
     }
 
@@ -552,55 +557,58 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
 
   // Si l'utilisateur n'est pas connecté, ne rien afficher (la redirection se fait dans useEffect)
   if (!user) {
-    return null;
+    return (
+      <AuthGuard>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 text-center">
+              <p>Veuillez vous connecter pour continuer votre réservation</p>
+            </div>
+          </div>
+        </div>
+      </AuthGuard>
+    );
   }
 
   if (step === 3) {
     return (
-      <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-2 text-center">
-          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      <AuthGuard>
+        <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-2 text-center">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Réservation confirmée !</h2>
+            <p className="text-gray-600 mb-4">
+              Vous recevrez un email de confirmation à {formData.email}
+            </p>
+            <button
+              onClick={onClose}
+              className="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 font-medium"
+            >
+              Fermer
+            </button>
           </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Réservation confirmée !</h2>
-          <p className="text-gray-600 mb-4">
-            Vous recevrez un email de confirmation à {formData.email}
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 font-medium"
-          >
-            Fermer
-          </button>
         </div>
-      </div>
+      </AuthGuard>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full my-2">
-        {/* Header */}
-        <div className="flex items-center justify-between p-2 border-b">
-          <div>
-            <h2 className="text-base font-bold text-gray-900">Réserver</h2>
-            <p className="text-xs text-gray-600">{service.title}</p>
+    <AuthGuard>
+      <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full my-2">
+          {/* Header */}
+          <div className="flex items-center justify-between p-2 border-b">
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Réserver</h2>
+              <p className="text-xs text-gray-600">{service.title}</p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handlePayment} className="p-2 space-y-2">
-          {/* Informations client */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-gray-900">Vos informations</h3>
-            
+          
+          <div className="p-4 space-y-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 <User className="w-4 h-4 inline mr-1" />
@@ -743,9 +751,9 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
               </>
             )}
           </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 };
 

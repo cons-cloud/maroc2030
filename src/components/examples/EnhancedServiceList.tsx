@@ -36,24 +36,63 @@ const EnhancedServiceList: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Configuration de la pagination
-  const {
-    currentPage,
-    totalPages,
-    startIndex,
-    endIndex,
-    itemsPerPage,
-    nextPage,
-    prevPage,
-    goToPage,
-    canGoToNextPage,
-    canGoToPrevPage,
-    getPageNumbers,
-    setItemsPerPage,
-  } = usePagination({
+  const pagination = usePagination({
     initialPage: 1,
     itemsPerPage: 6,
     totalItems: services.length,
   });
+  
+  const { currentPage, totalPages, itemsPerPage, nextPage, prevPage, goToPage, setItemsPerPage } = pagination;
+  
+  // Calculer les index de début et de fin pour l'affichage
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, services.length);
+  const canGoToNextPage = currentPage < totalPages;
+  const canGoToPrevPage = currentPage > 1;
+  
+  // Générer les numéros de page à afficher
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      // Moins de pages que le maximum à afficher, on les affiche toutes
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Plus de pages que le maximum à afficher, on affiche des points de suspension
+      const leftSide = Math.floor(maxPagesToShow / 2);
+      const rightSide = maxPagesToShow - leftSide - 1;
+      
+      if (currentPage <= leftSide + 1) {
+        // Près du début
+        for (let i = 1; i <= maxPagesToShow - 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - rightSide) {
+        // Près de la fin
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - (maxPagesToShow - 2); i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Au milieu
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - leftSide + 1; i <= currentPage + rightSide - 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   // Charger les services
   useEffect(() => {
