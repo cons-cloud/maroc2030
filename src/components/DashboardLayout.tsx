@@ -177,7 +177,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, role }) => 
           <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
             <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
               <div className="shrink-0 flex items-center px-4">
-                <span className="text-xl font-bold text-emerald-600">Maroc 2030</span>
+                <span className="text-xl font-bold text-emerald-600">2030Maroc</span>
               </div>
               <nav className="mt-5 px-2 space-y-1">
                 {menuItems.map((item) => {
@@ -214,7 +214,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, role }) => 
           <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
             <div className="h-0 flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
               <div className="shrink-0 flex items-center px-4">
-                <span className="text-xl font-bold text-emerald-600">Maroc 2030</span>
+                <span className="text-xl font-bold text-emerald-600">2030Maroc</span>
               </div>
               <nav className="mt-5 flex-1 px-2 space-y-1">
                 {menuItems.map((item) => {

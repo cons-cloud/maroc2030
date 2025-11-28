@@ -1,28 +1,335 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../../../lib/supabase';
-import { Users, Search, Filter, Plus, Trash2, CheckCircle, XCircle, Phone, MapPin, Building } from 'lucide-react';
-import toast from 'react-hot-toast';
-import PartnerForm from '../../../components/forms/PartnerForm';
-import ConfirmDialog from '../../../components/modals/ConfirmDialog';
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import Button from "@/components/ui/button";
+import { toast } from "react-hot-toast";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Check, 
+  Pencil, 
+  Trash2, 
+  X, 
+  Banknote, 
+  Building2, 
+  Car as CarIcon, 
+  Filter as FilterIcon, 
+  Hotel, 
+  Loader2, 
+  Plus, 
+  Search, 
+  ShieldAlert, 
+  ShieldCheck, 
+  Users, 
+  Clock 
+} from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { DataTable, type Column } from "@/components/ui";
 
-const PartnersManagement: React.FC = () => {
-  const [partners, setPartners] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'verified' | 'pending'>('all');
-  const [filterRole, setFilterRole] = useState<'all' | 'partner_hotel' | 'partner_car' | 'partner_tour'>('all');
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [deletingPartner, setDeletingPartner] = useState<any>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showBankDetails, setShowBankDetails] = useState<{[key: string]: boolean}>({});
-  const [editingBankDetails, setEditingBankDetails] = useState<{[key: string]: boolean}>({});
-  const [bankDetails, setBankDetails] = useState<{
-    [key: string]: {
-      bank_account?: string;
-      iban?: string;
+// Import des composants UI
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
+import { Dialog } from "@/components/ui/dialog";
+
+// Composant Switch local avec typage fort
+interface SwitchProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  className?: string;
+  disabled?: boolean;
+}
+
+const Switch: React.FC<SwitchProps> = ({
+  checked,
+  onChange,
+  className = "",
+  disabled = false,
+}) => (
+  <button
+    type="button"
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+      checked ? 'bg-emerald-600' : 'bg-gray-200'
+    } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
+    onClick={() => !disabled && onChange(!checked)}
+    disabled={disabled}
+    role="switch"
+    aria-checked={checked}
+  >
+    <span
+      className={`${
+        checked ? 'translate-x-6' : 'translate-x-1'
+      } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+    />
+  </button>
+);
+// Suppression de l'import de Tabs car non utilisé dans ce composant
+
+// Import des composants personnalisés
+// Suppression des imports de composants qui seront définis localement
+
+// Import des utilitaires et hooks
+import useDebounce from "@/hooks/useDebounce";
+import { validateBankAccount, validateIBAN } from "@/utils/validation";
+import useErrorHandler from "@/hooks/useErrorHandler";
+
+// Interface pour les props du composant StatCard
+interface StatCardProps {
+  value: number | string;
+  label: string;
+  icon: React.ReactNode;
+  className?: string;
+  valueClassName?: string;
+  loading?: boolean;
+}
+
+// Interface pour les données d'un partenaire
+interface Partner {
+  id: string;
+  company_name: string;
+  role: string;
+  is_verified: boolean;
+  phone?: string;
+  city?: string;
+  created_at: string;
+  bank_account?: string;
+  iban?: string;
+  email?: string;
+  address?: string;
+  postal_code?: string;
+  country?: string;
+  siret?: string;
+  vat_number?: string;
+  website?: string;
+  description?: string;
+  logo_url?: string;
+  status?: 'active' | 'inactive' | 'pending';
+  subscription_plan?: string;
+  subscription_status?: string;
+  subscription_end_date?: string;
+  last_login_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+  // Propriétés pour les statistiques
+  total?: number;
+  verified?: number;
+  pending?: number;
+  active?: number;
+  hotels?: number;
+  cars?: number;
+  tours?: number;
+}
+
+// Composant de carte de statistique
+const StatCard: React.FC<StatCardProps> = ({ 
+  value, 
+  label, 
+  icon,
+  className = 'bg-white',
+  valueClassName = 'text-gray-900',
+  loading = false
+}) => {
+  return (
+    <div className={`p-4 rounded-lg shadow ${className}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-500">{label}</p>
+          {loading ? (
+            <Skeleton className="h-8 w-24" />
+          ) : (
+            <p className={`text-2xl font-bold mt-1 ${valueClassName}`}>
+              {value}
+            </p>
+          )}
+        </div>
+        <div className="p-2 rounded-full bg-opacity-20 bg-gray-200">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Interface pour les props du composant PartnerForm
+interface PartnerFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  partner?: Partner;
+  onSuccess: () => void;
+  onClose?: () => void; 
+}
+
+// Composant PartnerForm local
+const PartnerForm: React.FC<PartnerFormProps> = ({ 
+  open, 
+  onOpenChange, 
+  partner, 
+  onSuccess,
+  onClose = () => onOpenChange(false) 
+}) => {
+  return (
+    <div className="p-4">
+      <h3 className="text-lg font-semibold mb-4">
+        {partner ? 'Modifier le partenaire' : 'Ajouter un partenaire'}
+      </h3>
+      <div className="space-y-4">
+        {/* Champs du formulaire */}
+        <div>
+          <Label htmlFor="company_name">Nom de l'entreprise</Label>
+          <input
+            id="company_name"
+            type="text"
+            className="w-full p-2 border rounded"
+            defaultValue={partner?.company_name || ''}
+          />
+        </div>
+        
+        <div className="flex justify-end space-x-2 mt-6">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onClose} 
+          >
+            Annuler
+          </Button>
+          <Button type="submit">
+            {partner ? 'Mettre à jour' : 'Ajouter'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Types de filtres
+type FilterStatus = 'all' | 'active' | 'inactive' | 'pending';
+type FilterRole = 'all' | 'partner_hotel' | 'partner_car' | 'partner_tour';
+
+// Interface pour les filtres
+interface Filters {
+  status: FilterStatus;
+  role: FilterRole;
+  search: string;
+}
+
+const ITEMS_PER_PAGE = 10;
+
+const PartnersManagement = () => {
+  // États principaux
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    verified: 0,
+    pending: 0,
+    active: 0,
+    hotels: 0,
+    cars: 0,
+    tours: 0
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+  const [deletingPartner, setDeletingPartner] = useState<Partner | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  
+  // Filtres
+  const [filters, setFilters] = useState<Filters>({
+    status: 'all',
+    role: 'all',
+    search: ''
+  });
+  
+  // États pour la gestion des détails bancaires
+  const [showBankDetails, setShowBankDetails] = useState<Record<string, boolean>>({});
+  const [isEditingBankDetails, setIsEditingBankDetails] = useState<Record<string, boolean>>({});
+  const [currentBankDetails, setCurrentBankDetails] = useState<{
+    bank_account: string;
+    iban: string;
+  } | null>(null);
+  
+  // Détails bancaires en cours d'édition
+  const [editingBankDetails, setEditingBankDetails] = useState<{
+    bank_account: string;
+    iban: string;
+  }>({
+    bank_account: '',
+    iban: ''
+  });
+
+  // Suivi des actions en cours
+  const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({});
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const { error, handleError, resetError } = useErrorHandler();
+
+  // Fonction pour charger les partenaires
+  const loadPartners = useCallback(async (page: number = 1) => {
+    try {
+      setLoading(true);
+      resetError?.();
+
+      // Calculer l'offset pour la pagination
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      // Construction de la requête de base
+      let query = supabase
+        .from('profiles')
+        .select('*', { count: 'exact' })
+        .range(from, to)
+        .like('role', 'partner%')
+        .order('created_at', { ascending: false });
+
+      // Application des filtres
+      if (filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+
+      if (filters.role !== 'all') {
+        query = query.eq('role', filters.role);
+      }
+
+      // Recherche par terme de recherche
+      if (searchTerm) {
+        query = query.or(`company_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%`);
+      }
+
+      // Exécution de la requête
+      const { data, error: queryError, count } = await query;
+
+      if (queryError) throw queryError;
+
+      const partnersData = data || [];
+      setPartners(partnersData);
+      setCurrentPage(page);
+
+      // Mettre à jour les statistiques
+      setStats({
+        total: partnersData.length,
+        verified: partnersData.filter(p => p.is_verified).length,
+        pending: partnersData.filter(p => p.status === 'pending').length,
+        active: partnersData.filter(p => p.status === 'active').length,
+        hotels: partnersData.filter(p => p.role === 'partner_hotel').length,
+        cars: partnersData.filter(p => p.role === 'partner_car').length,
+        tours: partnersData.filter(p => p.role === 'partner_tour').length
+      });
+
+      // Mettre à jour le nombre total de pages
+      if (count !== null) {
+        const calculatedTotalPages = Math.ceil(count / ITEMS_PER_PAGE);
+        setTotalPages(calculatedTotalPages);
+      }
+    } catch (err) {
+      handleError(err, 'Erreur lors du chargement des partenaires');
+    } finally {
+      setLoading(false);
     }
-  }>({});
+  }, [handleError, resetError]);
 
+  // Chargement initial des partenaires
   useEffect(() => {
     loadPartners();
     
@@ -38,465 +345,421 @@ const PartnersManagement: React.FC = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [loadPartners]);
 
-  const loadPartners = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .like('role', 'partner%')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPartners(data || []);
-    } catch (error) {
-      console.error('Error loading partners:', error);
-      toast.error('Erreur lors du chargement des partenaires');
-    } finally {
-      setLoading(false);
-    }
+  // Gestion des filtres
+  const handleStatusFilterChange = (status: string) => {
+    setFilters(prev => ({ ...prev, status: status as 'all' | 'active' | 'inactive' | 'pending' }));
+    setCurrentPage(1);
+    loadPartners(1);
+  };
+  
+  const handleRoleFilterChange = (role: FilterRole) => {
+    setFilters(prev => ({
+      ...prev,
+      role: role as FilterRole
+    }));
+    setCurrentPage(1);
+    loadPartners(1);
   };
 
-  const handleDelete = async () => {
-    if (!deletingPartner) return;
-
-    setIsDeleting(true);
+  // Fonction pour gérer la suppression d'un partenaire
+  const handleDelete = async (id: string): Promise<void> => {
+    if (!id) return;
+    
     try {
+      setIsDeleting(true);
+      
+      // Suppression du partenaire dans la base de données
       const { error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', deletingPartner.id);
-
+        .eq('id', id);
+      
       if (error) throw error;
-
-      // Recharger la liste des partenaires
-      await loadPartners();
-      toast.success('Partenaire supprimé avec succès');
+      
+      // Mise à jour de la liste des partenaires
+      await loadPartners(currentPage);
+      
+      // Fermeture de la boîte de dialogue
       setDeletingPartner(null);
+      toast.success('Partenaire supprimé avec succès');
     } catch (error) {
-      console.error('Error deleting partner:', error);
+      console.error('Erreur lors de la suppression du partenaire:', error);
       toast.error('Erreur lors de la suppression du partenaire');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Afficher/masquer les détails bancaires
-  const toggleBankDetails = (partnerId: string) => {
-    setShowBankDetails(prev => ({
-      ...prev,
-      [partnerId]: !prev[partnerId]
-    }));
-  };
-
-  // Activer/désactiver l'édition des détails bancaires
-  const toggleEditBankDetails = (partnerId: string, partner: any) => {
-    setEditingBankDetails(prev => ({
-      ...prev,
-      [partnerId]: !prev[partnerId]
-    }));
-
-    // Initialiser les champs d'édition
-    if (!editingBankDetails[partnerId]) {
-      setBankDetails(prev => ({
-        ...prev,
-        [partnerId]: {
-          bank_account: partner.bank_account || '',
-          iban: partner.iban || ''
-        }
-      }));
+  // Basculer la vérification d'un partenaire
+  const handleToggleVerification = async (id: string, currentStatus: boolean) => {
+    try {
+      setLoadingActions(prev => ({ ...prev, [`verify-${id}`]: true }));
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_verified: !currentStatus })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Mettre à jour l'état local
+      setPartners(prev => 
+        prev.map(partner => 
+          partner.id === id 
+            ? { ...partner, is_verified: !currentStatus } 
+            : partner
+        )
+      );
+      
+      toast.success(`Partenaire ${!currentStatus ? 'vérifié' : 'désactivé'} avec succès`);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du statut de vérification:', error);
+      toast.error('Erreur lors de la mise à jour du statut de vérification');
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [`verify-${id}`]: false }));
     }
   };
 
-  // Gérer le changement des champs de détails bancaires
-  const handleBankDetailsChange = (partnerId: string, field: string, value: string) => {
-    setBankDetails(prev => ({
+  // Gestion des détails bancaires
+  const handleBankDetailsChange = (id: string, field: 'bank_account' | 'iban', value: string) => {
+    setCurrentBankDetails(prev => ({
       ...prev,
-      [partnerId]: {
-        ...prev[partnerId],
-        [field]: value
-      }
+      [field]: value
+    }));
+    
+    // Mettre à jour l'état d'édition
+    setEditingBankDetails(prev => ({
+      ...prev,
+      [id]: true
     }));
   };
 
-  // Sauvegarder les modifications des détails bancaires
-  const saveBankDetails = async (partnerId: string) => {
+  const handleBankDetailsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPartner || !currentBankDetails) return;
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          bank_account: bankDetails[partnerId]?.bank_account || null,
-          iban: bankDetails[partnerId]?.iban || null
+          bank_account: currentBankDetails.bank_account,
+          iban: currentBankDetails.iban
         })
-        .eq('id', partnerId);
+        .eq('id', editingPartner.id);
 
       if (error) throw error;
 
-      // Mettre à jour l'affichage
-      await loadPartners();
-      setEditingBankDetails(prev => ({
-        ...prev,
-        [partnerId]: false
+      // Mise à jour de l'état local
+      setPartners(prev => 
+        prev.map(partner => 
+          partner.id === editingPartner.id 
+            ? { ...partner, ...currentBankDetails }
+            : partner
+        )
+      );
+      
+      toast.success('Détails bancaires mis à jour avec succès');
+      setEditingBankDetails(prev => ({ 
+        ...prev, 
+        [editingPartner.id]: false 
       }));
-      toast.success('Informations bancaires mises à jour avec succès');
     } catch (error) {
-      console.error('Error updating bank details:', error);
-      toast.error('Erreur lors de la mise à jour des informations bancaires');
+      console.error('Erreur lors de la mise à jour des détails bancaires:', error);
+      toast.error('Erreur lors de la mise à jour des détails bancaires');
     }
   };
 
-  const handleToggleVerification = async (partner: any) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_verified: !partner.is_verified })
-        .eq('id', partner.id);
-
-      if (error) throw error;
-
-      toast.success(partner.is_verified ? 'Partenaire non vérifié' : 'Partenaire vérifié');
-      loadPartners();
-    } catch (error) {
-      console.error('Error updating verification:', error);
-      toast.error('Erreur lors de la mise à jour');
-    }
-  };
-
-  const handleFormClose = () => {
-    setIsFormOpen(false);
-    loadPartners();
-  };
-
-  const filteredPartners = partners.filter(partner => {
-    const matchesSearch = 
-      partner.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      partner.phone?.includes(searchTerm) ||
-      partner.city?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = 
-      filterStatus === 'all' ||
-      (filterStatus === 'verified' && partner.is_verified) ||
-      (filterStatus === 'pending' && !partner.is_verified);
-    
-    const matchesRole = 
-      filterRole === 'all' ||
-      partner.role === filterRole;
-    
-    return matchesSearch && matchesStatus && matchesRole;
-  });
-
-  const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      'partner_hotel': 'Hôtelier',
-      'partner_car': 'Location de voitures',
-      'partner_tour': 'Circuits touristiques',
-      'partner': 'Partenaire général'
-    };
-    return labels[role] || role;
-  };
-
-  const stats = {
-    total: partners.length,
-    verified: partners.filter(p => p.is_verified).length,
-    pending: partners.filter(p => !p.is_verified).length,
-    hotels: partners.filter(p => p.role === 'partner_hotel').length,
-    cars: partners.filter(p => p.role === 'partner_car').length,
-    tours: partners.filter(p => p.role === 'partner_tour').length,
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+  // Définition des colonnes du tableau
+  const columns: Column<Partner>[] = useMemo(() => [
+    {
+      key: 'company_name',
+      header: "Nom de l'entreprise",
+    render: (partner) => (
+      <div className="flex items-center space-x-3">
+        <div className="shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+          {partner.logo_url ? (
+            <img className="h-10 w-10 rounded-full" src={partner.logo_url} alt={partner.company_name} />
+          ) : (
+            <Building2 className="h-5 w-5 text-gray-500" />
+          )}
+        </div>
+        <span className="font-medium">{partner.company_name}</span>
       </div>
-    );
+    )
+  },
+  {
+    key: 'email',
+    header: 'Email',
+    render: (partner) => partner.email || 'Non fourni'
+  },
+  {
+    key: 'status',
+    header: 'Statut',
+    render: (partner) => (
+      <Badge 
+        variant={
+          partner.status === 'active' 
+            ? 'default' 
+            : partner.status === 'pending' 
+              ? 'secondary' 
+              : 'destructive'
+        }
+      >
+        {partner.status === 'active' ? 'Actif' : partner.status === 'pending' ? 'En attente' : 'Inactif'}
+      </Badge>
+    )
+  },
+  {
+    key: 'actions',
+    header: 'Actions',
+    render: (partner) => (
+      <div className="flex space-x-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingPartner(partner);
+            setIsFormOpen(true);
+          }}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDeletingPartner(partner);
+          }}
+        >
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+    )
   }
+  ], []);
+
+  // Fonction pour fermer le formulaire et recharger les données
+  const handleFormClose = useCallback(() => {
+    setIsFormOpen(false);
+    setEditingPartner(null);
+    loadPartners(currentPage);
+  }, [currentPage, loadPartners]);
 
   return (
-    <div className="space-y-6">
-      {/* En-tête */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des Partenaires</h1>
-          <p className="text-gray-600 mt-1">{filteredPartners.length} partenaire(s) sur {partners.length}</p>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Gestion des partenaires</h1>
+        <Button 
+          onClick={() => {
+            setEditingPartner(null);
+            setIsFormOpen(true);
+          }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Ajouter un partenaire
+          </Button>
         </div>
-        <button
-          onClick={() => setIsFormOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
-        >
-          <Plus className="h-5 w-5" />
-          Nouveau Partenaire
-        </button>
-      </div>
-
-      {/* Statistiques */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-          <div className="text-sm text-gray-600">Total</div>
+        {/* Statistiques */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          <StatCard
+            value={stats.total}
+            label="Total Partenaires"
+            icon={<Users className="h-5 w-5 text-blue-600" />}
+            className="bg-blue-50"
+            valueClassName="text-blue-600"
+          />
+          <StatCard
+            value={stats.verified}
+            label="Vérifiés"
+            icon={<ShieldCheck className="h-5 w-5 text-green-600" />}
+            className="bg-green-50"
+            valueClassName="text-green-600"
+          />
+          <StatCard
+            value={stats.pending}
+            label="En attente"
+            icon={<Clock className="h-5 w-5 text-yellow-600" />}
+            className="bg-yellow-50"
+            valueClassName="text-yellow-600"
+          />
+          <StatCard
+            value={stats.active}
+            label="Actifs"
+            icon={<Check className="h-5 w-5 text-emerald-600" />}
+            className="bg-emerald-50"
+            valueClassName="text-emerald-600"
+          />
+          <StatCard
+            value={stats.hotels}
+            label="Hôtels"
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5 text-indigo-600"
+              >
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            }
+            className="bg-indigo-50" 
+            valueClassName="text-indigo-600"
+          />
+          <StatCard
+            value={stats.cars}
+            label="Voitures"
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5 text-orange-600"
+              >
+                <path d="M21 3c-3.95 0-7.85 1.35-10.45 3.5c-3.5 2.55-5.5 6.15-5.5 10.5v.5h15v-.5c0-4.35-1.95-8-5.5-10.5c-2.6-2.15-6.5-3.5-10.45-3.5z" />
+              </svg>
+            }
+            className="bg-orange-50" 
+            valueClassName="text-orange-600"
+          />
+          <StatCard
+            value={stats.tours}
+            label="Circuits touristiques"
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5 text-purple-600"
+              >
+                <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm6 13h-5v5h-2v-5h-5v-2h5v-5h2v5h5v2z" />
+              </svg>
+            }
+            className="bg-purple-50" 
+            valueClassName="text-purple-600"
+          />
         </div>
-        <div className="bg-green-50 rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.verified}</div>
-          <div className="text-sm text-gray-600">Vérifiés</div>
-        </div>
-        <div className="bg-orange-50 rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
-          <div className="text-sm text-gray-600">En attente</div>
-        </div>
-        <div className="bg-emerald-50 rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-emerald-600">{stats.hotels}</div>
-          <div className="text-sm text-gray-600">Hôteliers</div>
-        </div>
-        <div className="bg-purple-50 rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-purple-600">{stats.cars}</div>
-          <div className="text-sm text-gray-600">Locations</div>
-        </div>
-        <div className="bg-indigo-50 rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-indigo-600">{stats.tours}</div>
-          <div className="text-sm text-gray-600">Circuits</div>
-        </div>
-      </div>
 
-      {/* Filtres et recherche */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Recherche */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom, téléphone, ville..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-
-          {/* Filtre statut */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 appearance-none"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="verified">Vérifiés</option>
-              <option value="pending">En attente</option>
-            </select>
-          </div>
-
-          {/* Filtre rôle */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value as any)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 appearance-none"
-            >
-              <option value="all">Tous les types</option>
-              <option value="partner_hotel">Hôteliers</option>
-              <option value="partner_car">Locations de voitures</option>
-              <option value="partner_tour">Circuits touristiques</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Liste des partenaires */}
-      {filteredPartners.length === 0 ? (
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-12 text-center">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Aucun partenaire trouvé</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPartners.map((partner) => (
-            <div key={partner.id} className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition">
-              {/* En-tête de la carte */}
-              <div className="p-6 border-b">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                      <Building className="h-6 w-6 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{partner.company_name || 'Partenaire'}</h3>
-                      <span className="text-xs text-gray-500">{getRoleLabel(partner.role)}</span>
-                    </div>
-                  </div>
-                  <div className={`px-2 py-1 rounded-full text-xs ${
-                    partner.is_verified ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-                  }`}>
-                    {partner.is_verified ? '✓ Vérifié' : 'En attente'}
-                  </div>
-                </div>
-
-                {/* Informations */}
-                <div className="space-y-2 text-sm text-gray-600">
-                  {partner.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      {partner.phone}
-                    </div>
-                  )}
-                  {partner.city && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {partner.city}
-                    </div>
-                  )}
-                  <div className="text-xs text-gray-400">
-                    Inscrit le {new Date(partner.created_at).toLocaleDateString('fr-FR')}
-                  </div>
-                </div>
-              </div>
-
-              {/* Informations bancaires */}
-              <div className="border-t border-gray-100 p-4">
-                <button
-                  onClick={() => toggleBankDetails(partner.id)}
-                  className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-primary transition-colors"
-                >
-                  <span>Informations bancaires</span>
-                  <svg
-                    className={`h-4 w-4 transform transition-transform ${
-                      showBankDetails[partner.id] ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {showBankDetails[partner.id] && (
-                  <div className="mt-3 space-y-3">
-                    {editingBankDetails[partner.id] ? (
-                      <div className="space-y-2">
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">Numéro de compte</label>
-                          <input
-                            type="text"
-                            value={bankDetails[partner.id]?.bank_account || ''}
-                            onChange={(e) => handleBankDetailsChange(partner.id, 'bank_account', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            placeholder="Numéro de compte"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">IBAN</label>
-                          <input
-                            type="text"
-                            value={bankDetails[partner.id]?.iban || ''}
-                            onChange={(e) => handleBankDetailsChange(partner.id, 'iban', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            placeholder="IBAN"
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2 pt-2">
-                          <button
-                            onClick={() => toggleEditBankDetails(partner.id, partner)}
-                            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
-                          >
-                            Annuler
-                          </button>
-                          <button
-                            onClick={() => saveBankDetails(partner.id)}
-                            className="px-3 py-1.5 bg-primary text-white text-sm rounded-md hover:bg-primary/90"
-                          >
-                            Enregistrer
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-xs text-gray-500">Compte bancaire</p>
-                          <p className="text-sm font-medium">
-                            {partner.bank_account || 'Non renseigné'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">IBAN</p>
-                          <p className="text-sm font-mono">
-                            {partner.iban || 'Non renseigné'}
-                          </p>
-                        </div>
-                        <div className="flex justify-end pt-1">
-                          <button
-                            onClick={() => toggleEditBankDetails(partner.id, partner)}
-                            className="text-xs text-primary hover:underline"
-                          >
-                            Modifier
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="p-4 bg-gray-50 flex items-center justify-between">
-                <div className="space-x-2">
-                  <button
-                    onClick={() => handleToggleVerification(partner)}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition ${
-                      partner.is_verified
-                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                        : 'bg-green-100 text-green-700 hover:bg-green-200'
-                    }`}
-                  >
-                    {partner.is_verified ? (
-                      <><XCircle className="h-4 w-4" /> Retirer</>
-                    ) : (
-                      <><CheckCircle className="h-4 w-4" /> Vérifier</>
-                    )}
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setDeletingPartner(partner)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+        {/* Filtres */}
+        <div className="mb-6 bg-white p-4 rounded-lg shadow">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher un partenaire..."
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-          ))}
+            
+            <div className="flex items-center gap-2">
+              <select
+                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={filters.status}
+                onChange={(e) => setFilters({...filters, status: e.target.value as FilterStatus})}
+              >
+                <option value="all">Tous les statuts</option>
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif</option>
+                <option value="pending">En attente</option>
+              </select>
+              
+              <select
+                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={filters.role}
+                onChange={(e) => setFilters({...filters, role: e.target.value as FilterRole})}
+              >
+                <option value="all">Tous les rôles</option>
+                <option value="hotel">Hôtel</option>
+                <option value="car">Voiture</option>
+                <option value="tourism">Tourisme</option>
+              </select>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Formulaire d'ajout/modification */}
-      {isFormOpen && (
+        {/* Tableau des partenaires */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <DataTable
+            columns={columns}
+            data={partners}
+            loading={loading}
+            onRowClick={(partner) => {
+              setEditingPartner(partner);
+              setIsFormOpen(true);
+            }}
+            pagination={{
+              currentPage,
+              totalPages,
+              onPageChange: loadPartners
+            }}
+          />
+        </div>
+
+        {/* Formulaire d'édition/ajout */}
         <PartnerForm
-          onClose={handleFormClose}
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          partner={editingPartner}
           onSuccess={handleFormClose}
         />
-      )}
 
-      {/* Confirmation de suppression */}
-      {deletingPartner && (
-        <ConfirmDialog
-          isOpen={true}
-          title="Supprimer le partenaire"
-          message={`Êtes-vous sûr de vouloir supprimer ${deletingPartner.company_name || 'ce partenaire'} ? Cette action est irréversible.`}
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          onConfirm={handleDelete}
-          onClose={() => setDeletingPartner(null)}
-          type="danger"
-          loading={isDeleting}
-        />
-      )}
-    </div>
+        {/* Confirmation de suppression */}
+        {deletingPartner && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold mb-4">
+                Supprimer le partenaire
+              </h3>
+              <p className="mb-6">
+                Êtes-vous sûr de vouloir supprimer {deletingPartner?.company_name || 'ce partenaire'} ?
+                <br />
+                <span className="text-red-600 font-medium">Cette action est irréversible.</span>
+              </p>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeletingPartner(null)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="outline"
+                  className="bg-red-600 text-white hover:bg-red-700 border-red-600"
+                  onClick={() => handleDelete(deletingPartner.id)}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
   );
 };
 
-// Exportation nommée pour la compatibilité avec React.lazy
-export { PartnersManagement as default };
+export default PartnersManagement;

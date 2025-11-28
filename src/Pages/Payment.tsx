@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { stripeService } from '../services/stripeService';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { 
@@ -14,6 +15,8 @@ import {
   Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { MESSAGES } from '../constants/messages';
+import { formatDualCurrency, formatMad, formatEur, madToEur } from '../utils/currency';
 
 const Payment: React.FC = () => {
   const location = useLocation();
@@ -38,15 +41,47 @@ const Payment: React.FC = () => {
     fromLogin
   } = location.state || {};
 
+  // Vérifier s'il y a une réservation en attente dans le sessionStorage
+  const checkPendingReservation = useCallback(() => {
+    try {
+      const saved = sessionStorage.getItem('pendingReservation');
+      if (saved) {
+        const reservation = JSON.parse(saved);
+        // Vérifier si la réservation a moins de 30 minutes
+        const reservationTime = new Date(reservation.timestamp).getTime();
+        const now = new Date().getTime();
+        const thirtyMinutes = 30 * 60 * 1000; // 30 minutes en millisecondes
+
+        if (now - reservationTime < thirtyMinutes) {
+          setReservationData(reservation);
+          return true;
+        } else {
+          // Supprimer la réservation expirée
+          sessionStorage.removeItem('pendingReservation');
+          toast.info(MESSAGES.BOOKING.SESSION_EXPIRED);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification des réservations en attente:', error);
+      toast.error(MESSAGES.ERROR.DEFAULT);
+    }
+    return false;
+  }, []);
+
   useEffect(() => {
     // Si l'utilisateur vient de se connecter et qu'il y a des données de réservation
     if (fromLogin && location.state?.reservationData) {
       setReservationData(location.state.reservationData);
+      // Nettoyer le sessionStorage après utilisation
+      sessionStorage.removeItem('pendingReservation');
     } else if (!bookingId && location.state) {
       // Si on a des données de réservation mais pas encore de bookingId
       setReservationData(location.state);
+    } else if (!bookingId) {
+      // Vérifier s'il y a une réservation en attente
+      checkPendingReservation();
     }
-  }, [location.state, fromLogin, bookingId]);
+  }, [location.state, fromLogin, bookingId, checkPendingReservation]);
 
   const [cardData, setCardData] = useState({
     cardNumber: '',
@@ -60,10 +95,13 @@ const Payment: React.FC = () => {
     if (reservationData && !bookingId) {
       createReservation();
     } else if (!bookingId || !totalPrice) {
-      toast.error('Informations de réservation manquantes');
-      navigate('/');
+      // Vérifier s'il y a une réservation en attente avant de rediriger
+      if (!checkPendingReservation()) {
+        toast.error(MESSAGES.PAYMENT.MISSING_INFO);
+        navigate('/');
+      }
     }
-  }, [reservationData, bookingId, totalPrice, navigate]);
+  }, [reservationData, bookingId, totalPrice, navigate, checkPendingReservation]);
 
   const createReservation = async () => {
     if (!reservationData || !user) return;
@@ -117,49 +155,71 @@ const Payment: React.FC = () => {
     setLoading(true);
 
     try {
-      // 1. Créer le paiement
-      const { data: payment, error: paymentError } = await supabase
-        .from('payments')
-        .insert([{
-          booking_id: bookingId,
-          user_id: profile?.id,
-          amount: totalPrice,
-          status: 'paid',
-          payment_method: paymentMethod,
-          transaction_id: `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          created_at: new Date().toISOString(),
-        }])
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      // 2. Mettre à jour le statut de la réservation
-      const tableName = bookingType === 'car' ? 'car_bookings' :
-                       bookingType === 'tourism' ? 'tourism_bookings' : 'property_bookings';
-
-      const { error: bookingError } = await supabase
-        .from(tableName)
-        .update({
-          status: 'confirmed',
-          payment_status: 'paid',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', bookingId);
-
-      if (bookingError) throw bookingError;
-
-      toast.success('Paiement effectué avec succès !');
-      
-      // Rediriger vers la page de confirmation
-      navigate('/payment/success', {
-        state: {
-          paymentId: payment.id,
-          bookingId,
-          totalPrice,
-          serviceTitle,
-        }
+      // 1. Créer l'intention de paiement avec la commission de 10%
+      const { clientSecret, paymentIntent } = await stripeService.createPaymentIntent({
+        amount: totalPrice,
+        currency: 'MAD',
+        customerId: user?.id,
+        description: `Paiement pour ${serviceTitle}`,
+        metadata: {
+          serviceType: bookingType,
+          serviceId: serviceId,
+          startDate,
+          endDate,
+          guests
+        },
+        bookingId,
+        partnerId: location.state?.partnerId // Assurez-vous de passer le partnerId depuis le state de navigation
       });
+
+      // 2. Confirmer le paiement
+      const result = await stripeService.confirmPayment({
+        paymentIntentId: paymentIntent.id,
+        paymentMethod: {
+          card: {
+            number: cardData.cardNumber,
+            exp_month: cardData.expiryDate.split('/')[0],
+            exp_year: cardData.expiryDate.split('/')[1],
+            cvc: cardData.cvv
+          },
+          billing_details: {
+            name: cardData.cardName,
+            email: profile?.email
+          }
+        },
+        customerEmail: profile?.email
+      });
+
+      if (result.status === 'succeeded') {
+        // 3. Mettre à jour le statut de la réservation
+        const tableName = bookingType === 'car' ? 'car_bookings' :
+                         bookingType === 'tourism' ? 'tourism_bookings' : 'property_bookings';
+
+        const { error: bookingError } = await supabase
+          .from(tableName)
+          .update({
+            status: 'confirmed',
+            payment_status: 'paid',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', bookingId);
+
+        if (bookingError) throw bookingError;
+
+        toast.success('Paiement effectué avec succès !');
+        
+        // Rediriger vers la page de confirmation
+        navigate('/payment/success', {
+          state: {
+            paymentId: paymentIntent.id,
+            bookingId,
+            totalPrice,
+            serviceTitle,
+            commission: totalPrice * 0.10, // 10% de commission
+            partnerAmount: totalPrice * 0.90 // 90% pour le partenaire
+          }
+        });
+      }
     } catch (error: any) {
       console.error('Error processing payment:', error);
       toast.error(error.message || 'Erreur lors du traitement du paiement');
@@ -320,7 +380,7 @@ const Payment: React.FC = () => {
                         ) : (
                           <>
                             <CreditCard className="h-5 w-5 mr-2" />
-                            Payer {totalPrice?.toLocaleString()} MAD
+                            Payer {formatMad(totalPrice || 0)}
                           </>
                         )}
                       </button>
@@ -346,7 +406,12 @@ const Payment: React.FC = () => {
                             Confirmation...
                           </>
                         ) : (
-                          'Confirmer la réservation'
+                          <>
+                            Confirmer pour {formatMad(totalPrice || 0)}
+                            <div className="text-xs opacity-80 ml-1">
+                              (≈ {formatEur(madToEur(totalPrice || 0))})
+                            </div>
+                          </>
                         )}
                       </button>
                     </div>
@@ -377,7 +442,12 @@ const Payment: React.FC = () => {
                             Confirmation...
                           </>
                         ) : (
-                          'Confirmer la réservation'
+                          <>
+                            Confirmer pour {formatMad(totalPrice || 0)}
+                            <div className="text-xs opacity-80 ml-1">
+                              (≈ {formatEur(madToEur(totalPrice || 0))})
+                            </div>
+                          </>
                         )}
                       </button>
                     </div>
@@ -405,20 +475,22 @@ const Payment: React.FC = () => {
                     <div className="border-t border-gray-200 pt-3">
                       <div className="flex justify-between mb-2">
                         <span className="text-gray-600">Sous-total</span>
-                        <span className="font-medium">{totalPrice?.toLocaleString()} MAD</span>
+                        <div className="text-right">
+                          {formatDualCurrency(totalPrice || 0)}
+                        </div>
                       </div>
                       <div className="flex justify-between mb-2">
                         <span className="text-gray-600">Frais de service</span>
-                        <span className="font-medium">0 MAD</span>
+                        <span className="font-medium">Inclus</span>
                       </div>
                     </div>
 
                     <div className="border-t border-gray-200 pt-3">
                       <div className="flex justify-between">
                         <span className="font-semibold text-gray-900">Total</span>
-                        <span className="font-bold text-primary text-xl">
-                          {totalPrice?.toLocaleString()} MAD
-                        </span>
+                        <div className="text-right">
+                          {formatDualCurrency(totalPrice || 0)}
+                        </div>
                       </div>
                     </div>
                   </div>

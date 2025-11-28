@@ -101,7 +101,7 @@ const Navbar: React.FC<NavbarProps> = () => {
           <div className="flex items-center">
             <Link to="/" className="shrink-0 flex items-center p-0">
               <h1 className="text-primary m-0 text-xl font-bold" style={{ fontSize: '1.6rem' }}>
-                <i className="fa fa-map-marker-alt mr-2"></i>Maroc2030
+                <i className="fa fa-map-marker-alt mr-2"></i>2030Maroc
               </h1>
             </Link>
           </div>
@@ -214,23 +214,24 @@ const Navbar: React.FC<NavbarProps> = () => {
       {/* Menu mobile */}
       {isOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-              Connexion
+          {/* Affichage de l'avatar utilisateur si connecté */}
+          {profile && (
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                  {profile.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {profile.first_name || 'Utilisateur'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate max-w-[180px]">
+                    {profile.email}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              {profile ? (
-                <UserMenu />
-              ) : (
-                <Link
-                  to="/login"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Connexion
-                </Link>
-              )}
-            </div>
-          </div>
+          )}
           <div className="px-2 pt-2 pb-3 space-y-1">
             {navLinks.map((item) => (
               <div key={item.name} className="px-2">

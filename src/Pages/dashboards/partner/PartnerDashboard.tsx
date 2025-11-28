@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useRealtimeSubscription } from '../../../hooks/useRealtimeSubscription';
 import { DollarSign, TrendingUp, Clock, CreditCard, CheckCircle, XCircle, AlertCircle, Plus, Package, ArrowRight } from 'lucide-react';
 import { Line, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
@@ -94,58 +95,88 @@ const PartnerDashboard: React.FC = () => {
   };
   const [recentBookings, setRecentBookings] = useState<Array<RecentBooking & { product_title: string }>>([]);
 
-  // Charger les données du tableau de bord
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
+  // Fonction pour charger les données du tableau de bord
+  const loadDashboardData = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      setLoading(true);
+      
+      // Charger les statistiques
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_partner_dashboard_stats', { partner_id: user.id });
         
-        // Charger les statistiques
-        const { data: statsData, error: statsError } = await supabase
-          .rpc('get_partner_dashboard_stats', { partner_id: user?.id });
-          
-        if (statsError) throw statsError;
+      if (statsError) throw statsError;
+      
+      // Charger les réservations récentes
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          booking_number,
+          client_name,
+          product:service_id (title),
+          check_in_date,
+          check_out_date,
+          total_amount,
+          commission_amount,
+          partner_amount,
+          status,
+          created_at
+        `)
+        .eq('partner_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
         
-        // Charger les réservations récentes
-        const { data: bookingsData, error: bookingsError } = await supabase
-          .from('bookings')
-          .select(`
-            id,
-            booking_number,
-            client_name,
-            product:service_id (title),
-            check_in_date,
-            check_out_date,
-            total_amount,
-            commission_amount,
-            partner_amount,
-            status,
-            created_at
-          `)
-          .eq('partner_id', user?.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-          
-        if (bookingsError) throw bookingsError;
-        
-        // Mettre à jour l'état avec les données formatées
+      if (bookingsError) throw bookingsError;
+      
+      // Mettre à jour l'état avec les données formatées
+      if (statsData && statsData.length > 0) {
         setStats(statsData[0]);
+      }
+      
+      if (bookingsData) {
         setRecentBookings(bookingsData.map(booking => ({
           ...booking,
           product_title: (booking as any).product?.title || 'Produit inconnu'
         })));
-        
-      } catch (error) {
-        console.error('Erreur lors du chargement du tableau de bord:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-    
-    if (user?.id) {
-      loadDashboardData();
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement du tableau de bord:', error);
+    } finally {
+      setLoading(false);
     }
   }, [user?.id]);
+
+  // Chargement initial des données
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  // Abonnement aux mises à jour des réservations
+  useRealtimeSubscription({
+    table: 'bookings',
+    event: '*',
+    filter: `partner_id=eq.${user?.id}`,
+    callback: (payload) => {
+      console.log('Mise à jour de réservation détectée:', payload);
+      loadDashboardData();
+    },
+    enabled: !!user?.id
+  });
+
+  // Abonnement aux mises à jour des paiements
+  useRealtimeSubscription({
+    table: 'payments',
+    event: '*',
+    filter: `partner_id=eq.${user?.id}`,
+    callback: (payload) => {
+      console.log('Mise à jour de paiement détectée:', payload);
+      loadDashboardData();
+    },
+    enabled: !!user?.id
+  });
 
   // Options pour les graphiques
   const lineChartOptions = {

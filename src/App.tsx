@@ -1,14 +1,23 @@
 import { Suspense, lazy, useState } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import ConfirmEmail from "./Pages/Auth/ConfirmEmail";
+import { AuthCallback } from "./Pages/AuthCallback";
+import ResetPassword from "./Pages/Auth/ResetPassword";
+import MagicLink from "./Pages/Auth/MagicLink";
+import Reauthenticate from "./Pages/Auth/Reauthenticate";
+import UpdateEmail from "./Pages/Auth/UpdateEmail";
+import InviteUser from "./Pages/Auth/InviteUser";
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from "./contexts/AuthContext";
+import Callback from './Pages/Auth/Callback';
 import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import { SiteContentProvider } from "./contexts/SiteContentContext";
 import RoleGuard from "./components/RoleGuard";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ROUTES } from "./config/routes";
 import { SEO } from "./components/SEO";
+import CookieConsent from "./components/CookieConsent";
 
 // Composants de pages
 const DevenirHote = lazy(() => import("./Pages/DevenirHote"));
@@ -109,6 +118,7 @@ const PublicLayout = () => {
         <Outlet context={{ handleBooking }} />
       </main>
       <Footer />
+      <CookieConsent />
       {isBookingOpen && selectedApartment && (
         <BookingForm 
           isOpen={isBookingOpen}
@@ -173,6 +183,12 @@ function App() {
                   <Route path={ROUTES.LOGIN} element={<Login />} />
                   <Route path={ROUTES.SIGNUP} element={<Inscription />} />
                   <Route path={ROUTES.BECOME_HOST} element={<DevenirHote />} />
+                  <Route path={ROUTES.EMAIL_CONFIRM} element={<ConfirmEmail />} />
+                  <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
+                  <Route path={ROUTES.MAGIC_LINK} element={<MagicLink />} />
+                  <Route path={ROUTES.REAUTHENTICATE} element={<Reauthenticate />} />
+                  <Route path={ROUTES.UPDATE_EMAIL} element={<UpdateEmail />} />
+                  <Route path={ROUTES.INVITE_USER} element={<InviteUser />} />
                 </Route>
 
                 {/* Routes publiques avec navbar et footer */}
@@ -204,6 +220,9 @@ function App() {
                   <Route path=":type/:id/reserver" element={<ServiceReservation />} />
                   <Route path={ROUTES.PAYMENT} element={<Payment />} />
                   <Route path={ROUTES.PAYMENT_SUCCESS} element={<PaymentSuccess />} />
+                  
+                  {/* Route de rappel pour l'authentification OAuth (Google, etc.) */}
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                 </Route>
 
                 {/* Tableau de bord administrateur */}
@@ -333,6 +352,9 @@ function App() {
                   <Route path="*" element={<Dashboard404 role="client" />} />
                 </Route>
 
+                {/* Route de callback pour l'authentification OAuth */}
+                <Route path="/auth/callback" element={<Callback />} />
+                
                 {/* Redirection des anciennes URLs */}
                 <Route path="/dashboard" element={<Navigate to={ROUTES.HOME} replace />} />
                 <Route path="/admin" element={<Navigate to={ROUTES.ADMIN.DASHBOARD} replace />} />

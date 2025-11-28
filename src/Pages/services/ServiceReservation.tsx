@@ -4,7 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../config/routes';
 import { toast } from 'react-hot-toast';
+import { MESSAGES } from '../../constants/messages';
 import { Calendar, Mail, Phone, ArrowLeft, CheckCircle, User } from 'lucide-react';
+import { formatDualCurrency } from '../../utils/currency';
+import useRealtimeSubscription from '../../hooks/useRealtimeSubscription';
 
 interface UserMetadata {
   full_name?: string;
@@ -59,7 +62,7 @@ const ServiceReservation: React.FC = () => {
 
   const fetchService = useCallback(async (): Promise<void> => {
     if (!id || !type) {
-      toast.error('Service non trouvé');
+      toast.error(MESSAGES.ERROR.NOT_FOUND);
       navigate(ROUTES.HOME);
       return;
     }
@@ -113,28 +116,130 @@ const ServiceReservation: React.FC = () => {
       }
     } catch (error) {
       console.error('Erreur lors du chargement du service:', error);
-      toast.error('Erreur lors du chargement du service');
+      toast.error(MESSAGES.ERROR.DEFAULT);
       navigate(-1);
     } finally {
       setIsLoading(false);
     }
   }, [id, type, user, navigate, location.state]);
 
+  // Définition du type pour les données du service
+  type ServiceUpdate = {
+    id: string;
+    nom?: string;
+    titre?: string;
+    name?: string;
+    description?: string;
+    details?: string;
+    prix?: number;
+    prix_nuit?: number;
+    prix_jour?: number;
+    images?: string[];
+    image_url?: string;
+    [key: string]: any;
+  };
+
+  // Abonnement aux mises à jour du service en temps réel
+  useRealtimeSubscription<ServiceUpdate>({
+    table: type === 'hebergements' ? 'hebergements' : 
+           type === 'voitures' ? 'voitures' : 
+           type === 'circuits' ? 'circuits' : 'services',
+    event: 'UPDATE',
+    filter: `id=eq.${id}`,
+    callback: (payload) => {
+      console.log('Mise à jour du service détectée:', payload);
+      if (payload.new) {
+        const updatedService = {
+          id: payload.new.id,
+          title: payload.new.nom || payload.new.titre || payload.new.name || 'Sans titre',
+          description: payload.new.description || payload.new.details || '',
+          price: payload.new.prix || payload.new.prix_nuit || payload.new.prix_jour || 0,
+          images: payload.new.images || (payload.new.image_url ? [payload.new.image_url] : []),
+          type: type
+        };
+        setService(updatedService);
+        toast.success('Les informations du service ont été mises à jour', {
+          duration: 3000,
+          position: 'top-center'
+        });
+      }
+    },
+    enabled: !!id && !!type
+  });
+
   useEffect(() => {
-    fetchService();
-  }, [fetchService]);
+    // Vérifier s'il y a une réservation en attente au chargement
+    const checkPendingReservation = () => {
+      const savedReservation = getReservationFromStorage();
+      if (savedReservation && savedReservation.serviceId === id) {
+        // Mettre à jour le formulaire avec les données sauvegardées
+        setFormData(prev => ({
+          ...prev,
+          startDate: savedReservation.startDate,
+          endDate: savedReservation.endDate,
+          guests: savedReservation.guests,
+          fullName: savedReservation.customerInfo.fullName,
+          email: savedReservation.customerInfo.email,
+          phone: savedReservation.customerInfo.phone,
+          specialRequests: savedReservation.customerInfo.specialRequests || ''
+        }));
+        
+        // Afficher une notification à l'utilisateur
+        toast.success(MESSAGES.BOOKING.RESTORED, {
+          duration: 5000,
+          position: 'top-center'
+        });
+      }
+    };
+
+    fetchService().then(() => {
+      checkPendingReservation();
+    });
+  }, [fetchService, id]);
+
+  // Sauvegarder les données de réservation dans sessionStorage
+  const saveReservationToStorage = (data: any) => {
+    try {
+      sessionStorage.setItem('pendingReservation', JSON.stringify({
+        ...data,
+        timestamp: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la réservation:', error);
+    }
+  };
+
+  // Récupérer les données de réservation depuis sessionStorage
+  const getReservationFromStorage = () => {
+    try {
+      const saved = sessionStorage.getItem('pendingReservation');
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la réservation:', error);
+      return null;
+    }
+  };
+
+  // Nettoyer les données de réservation sauvegardées
+  const clearReservationStorage = () => {
+    try {
+      sessionStorage.removeItem('pendingReservation');
+    } catch (error) {
+      console.error('Erreur lors du nettoyage de la réservation:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Vérifier les champs obligatoires
     if (!formData.startDate || !formData.endDate) {
-      toast.error('Veuillez sélectionner des dates valides');
+      toast.error(MESSAGES.BOOKING.INVALID_DATES);
       return;
     }
 
     if (!formData.fullName || !formData.email || !formData.phone) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error(MESSAGES.ERROR.REQUIRED_FIELDS);
       return;
     }
 
@@ -166,8 +271,12 @@ const ServiceReservation: React.FC = () => {
         email: formData.email,
         phone: formData.phone,
         specialRequests: formData.specialRequests
-      }
+      },
+      timestamp: new Date().toISOString()
     };
+
+    // Sauvegarder les données de réservation
+    saveReservationToStorage(reservationData);
 
     // Si l'utilisateur n'est pas connecté, le rediriger vers la page de connexion
     if (!user) {
@@ -175,15 +284,19 @@ const ServiceReservation: React.FC = () => {
         state: {
           from: ROUTES.PAYMENT,
           reservationData,
+          fromReservation: true,
           message: 'Veuillez vous connecter ou créer un compte pour finaliser votre réservation.'
         }
       });
       return;
     }
 
-    // Si l'utilisateur est connecté, procéder à la réservation
+    // Si l'utilviateur est connecté, procéder à la réservation
     try {
       setIsLoading(true);
+      
+      // Nettoyer les anciennes données de réservation
+      clearReservationStorage();
       
       // Vérifier si les dates sont valides
       if (!formData.startDate || !formData.endDate) {
@@ -281,6 +394,10 @@ const ServiceReservation: React.FC = () => {
               </svg>
             </div>
             <div className="ml-3">
+              <div className="text-lg font-semibold">
+                <p className="font-medium">Total :</p>
+                {formatDualCurrency(0)}
+              </div>
               <p className="text-sm text-red-700">
                 Service introuvable. Veuillez réessayer ou contacter le support.
               </p>
@@ -508,7 +625,7 @@ const ServiceReservation: React.FC = () => {
                           <div className="mt-4 pt-4 border-t border-gray-200">
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-500">Prix par nuit</span>
-                              <span className="font-medium text-gray-900">{service.price} MAD</span>
+                              {formatDualCurrency(service.price)}
                             </div>
                             
                             {formData.startDate && formData.endDate && (
@@ -521,11 +638,11 @@ const ServiceReservation: React.FC = () => {
                                 </div>
                                 
                                 <div className="mt-2 pt-2 border-t border-gray-200">
-                                  <div className="flex justify-between text-base font-medium text-gray-900">
-                                    <span>Total</span>
-                                    <span>
-                                      {calculateNights(formData.startDate, formData.endDate) * service.price} MAD
-                                    </span>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-base font-medium text-gray-900">Total</span>
+                                    <div className="text-right">
+                                      {formatDualCurrency(calculateNights(formData.startDate, formData.endDate) * service.price)}
+                                    </div>
                                   </div>
                                 </div>
                               </div>

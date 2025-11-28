@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { toast } from 'react-hot-toast';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Download } from 'lucide-react';
+import { Download, Filter, X, DollarSign } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-type Commission = {
+interface Commission {
   payment_id: string;
   booking_id: string;
-  service_title: string;
+  service_name: string;
+  service_type: string;
   partner_id: string;
   partner_name: string;
   total_amount: number;
@@ -17,41 +18,44 @@ type Commission = {
   payment_status: string;
   paid_at: string;
   is_commission_paid: boolean;
-};
+}
 
 export const CommissionsPage: React.FC = () => {
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCommissions, setTotalCommissions] = useState(0);
-  const [totalPaid, setTotalPaid] = useState(0);
-  const [totalPending, setTotalPending] = useState(0);
-  const [isExporting, setIsExporting] = useState(false);
-
-  useEffect(() => {
-    loadCommissions();
-  }, []);
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    status: 'all',
+    serviceType: 'all'
+  });
 
   const loadCommissions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('commission_reports')
         .select('*')
         .order('paid_at', { ascending: false });
 
-      if (error) throw error;
+      // Appliquer les filtres
+      if (filters.dateFrom) {
+        query = query.gte('paid_at', `${filters.dateFrom}T00:00:00`);
+      }
+      if (filters.dateTo) {
+        query = query.lte('paid_at', `${filters.dateTo}T23:59:59`);
+      }
+      if (filters.status !== 'all') {
+        query = query.eq('is_commission_paid', filters.status === 'paid');
+      }
+      if (filters.serviceType !== 'all') {
+        query = query.eq('service_type', filters.serviceType);
+      }
 
+      const { data, error } = await query;
+
+      if (error) throw error;
       setCommissions(data || []);
-      
-      // Calculer les totaux
-      const total = data?.reduce((sum: number, item: Commission) => sum + (item.admin_commission || 0), 0) || 0;
-      const paid = data
-        ?.filter((item: Commission) => item.is_commission_paid)
-        .reduce((sum: number, item: Commission) => sum + (item.admin_commission || 0), 0) || 0;
-      
-      setTotalCommissions(Number(total.toFixed(2)));
-      setTotalPaid(Number(paid.toFixed(2)));
-      setTotalPending(Number((total - paid).toFixed(2)));
     } catch (error) {
       console.error('Erreur lors du chargement des commissions:', error);
       toast.error('Erreur lors du chargement des commissions');
@@ -60,84 +64,78 @@ export const CommissionsPage: React.FC = () => {
     }
   };
 
-  const markAsPaid = async (paymentId: string) => {
+  const toggleCommissionStatus = async (paymentId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
         .from('payments')
-        .update({ is_commission_paid: true })
+        .update({ 
+          metadata: { is_commission_paid: !currentStatus },
+          updated_at: new Date().toISOString()
+        })
         .eq('id', paymentId);
 
       if (error) throw error;
-
-      toast.success('Commission marquée comme payée');
+      
+      toast.success(`Commission marquée comme ${!currentStatus ? 'payée' : 'non payée'}`);
       loadCommissions();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du statut de la commission:', error);
-      toast.error('Erreur lors de la mise à jour du statut de la commission');
+      console.error('Erreur lors de la mise à jour du statut:', error);
+      toast.error('Erreur lors de la mise à jour du statut');
     }
   };
 
   const exportToCSV = () => {
-    try {
-      setIsExporting(true);
-      
-      // Créer l'en-tête du CSV
-      const headers = [
-        'ID Paiement',
-        'ID Réservation',
-        'Service',
-        'Partenaire',
-        'Montant Total (MAD)',
-        'Commission (10%)',
-        'Montant Partenaire',
-        'Statut Paiement',
-        'Date Paiement',
-        'Statut Commission'
-      ];
+    // En-têtes du CSV
+    const headers = [
+      'ID Paiement',
+      'ID Réservation',
+      'Service',
+      'Type',
+      'Partenaire',
+      'Montant Total (MAD)',
+      'Commission (10%)',
+      'Montant Partenaire',
+      'Statut Paiement',
+      'Date Paiement',
+      'Statut Commission'
+    ];
 
-      // Créer les lignes de données
-      const csvRows = commissions.map(commission => [
-        `"${commission.payment_id}"`,
-        `"${commission.booking_id}"`,
-        `"${commission.service_title || 'N/A'}"`,
-        `"${commission.partner_name || 'N/A'}"`,
-        commission.total_amount?.toFixed(2) || '0.00',
-        commission.admin_commission?.toFixed(2) || '0.00',
-        commission.partner_amount?.toFixed(2) || '0.00',
-        `"${commission.payment_status || 'N/A'}"`,
-        `"${commission.paid_at ? format(parseISO(commission.paid_at), 'PPpp', { locale: fr }) : 'N/A'}"`,
-        `"${commission.is_commission_paid ? 'Payée' : 'En attente'}"`
-      ]);
+    // Lignes de données
+    const csvRows = commissions.map(commission => [
+      `"${commission.payment_id}"`,
+      `"${commission.booking_id}"`,
+      `"${commission.service_name || 'N/A'}"`,
+      `"${commission.service_type || 'N/A'}"`,
+      `"${commission.partner_name || 'N/A'}"`,
+      commission.total_amount?.toFixed(2) || '0.00',
+      commission.admin_commission?.toFixed(2) || '0.00',
+      commission.partner_amount?.toFixed(2) || '0.00',
+      `"${commission.payment_status || 'N/A'}"`,
+      `"${format(new Date(commission.paid_at), 'PPpp', { locale: fr })}"`,
+      `"${commission.is_commission_paid ? 'Payée' : 'En attente'}"`
+    ]);
 
-      // Créer le contenu CSV
-      const csvContent = [
-        headers.join(','),
-        ...csvRows.map(row => row.join(','))
-      ].join('\n');
+    // Créer le contenu CSV
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(row => row.join(','))
+    ].join('\n');
 
-      // Créer un objet Blob avec le contenu CSV
-      const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
-      
-      // Créer un lien de téléchargement
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `commissions_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-      link.style.visibility = 'hidden';
-      
-      // Déclencher le téléchargement
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success('Export CSV réussi');
-    } catch (error) {
-      console.error('Erreur lors de l\'export CSV:', error);
-      toast.error('Erreur lors de l\'export CSV');
-    } finally {
-      setIsExporting(false);
-    }
+    // Télécharger le fichier
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `commissions_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
+
+  const totalCommissions = commissions.reduce((sum, c) => sum + (c.admin_commission || 0), 0);
+  const totalPaid = commissions
+    .filter(c => c.is_commission_paid)
+    .reduce((sum, c) => sum + (c.admin_commission || 0), 0);
 
   if (loading) {
     return (
@@ -148,59 +146,119 @@ export const CommissionsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des commissions</h1>
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Gestion des Commissions</h1>
+        <div className="flex space-x-4">
           <button
             onClick={exportToCSV}
-            disabled={isExporting || commissions.length === 0}
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-              isExporting || commissions.length === 0
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-emerald-600 hover:bg-emerald-700'
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500`}
+            disabled={commissions.length === 0}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
           >
-            {isExporting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Export en cours...
-              </>
-            ) : (
-              <>
-                <Download className="-ml-1 mr-2 h-4 w-4" />
-                Exporter en CSV
-              </>
-            )}
+            <Download className="mr-2 h-4 w-4" />
+            Exporter en CSV
           </button>
         </div>
-        
-        {/* Cartes de résumé */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-medium text-gray-500">Total des commissions</h3>
-            <p className="mt-1 text-3xl font-semibold text-gray-900">
-              {totalCommissions.toFixed(2)} MAD
-            </p>
+      </div>
+
+      {/* Filtres */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+              className="w-full p-2 border rounded"
+            />
           </div>
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <h3 className="text-sm font-medium text-green-700">Commissions payées</h3>
-            <p className="mt-1 text-3xl font-semibold text-green-900">
-              {totalPaid.toFixed(2)} MAD
-            </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+              className="w-full p-2 border rounded"
+            />
           </div>
-          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-            <h3 className="text-sm font-medium text-yellow-700">Commissions en attente</h3>
-            <p className="mt-1 text-3xl font-semibold text-yellow-900">
-              {totalPending.toFixed(2)} MAD
-            </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({...filters, status: e.target.value})}
+              className="w-full p-2 border rounded"
+            >
+              <option value="all">Tous</option>
+              <option value="paid">Payées</option>
+              <option value="unpaid">En attente</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type de service</label>
+            <select
+              value={filters.serviceType}
+              onChange={(e) => setFilters({...filters, serviceType: e.target.value})}
+              className="w-full p-2 border rounded"
+            >
+              <option value="all">Tous</option>
+              <option value="hotel">Hôtels</option>
+              <option value="car">Voitures</option>
+              <option value="tourism">Activités</option>
+            </select>
           </div>
         </div>
+        {(filters.dateFrom || filters.dateTo || filters.status !== 'all' || filters.serviceType !== 'all') && (
+          <div className="mt-3">
+            <button
+              onClick={() => setFilters({
+                dateFrom: '',
+                dateTo: '',
+                status: 'all',
+                serviceType: 'all'
+              })}
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Réinitialiser les filtres
+            </button>
+          </div>
+        )}
+      </div>
 
-        {/* Tableau des commissions */}
+      {/* Cartes de résumé */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-gray-500 text-sm font-medium">Total des commissions</div>
+          <div className="text-2xl font-bold mt-1">
+            {totalCommissions.toFixed(2)} MAD
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {commissions.length} transactions
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-gray-500 text-sm font-medium">Commissions payées</div>
+          <div className="text-2xl font-bold mt-1 text-green-600">
+            {totalPaid.toFixed(2)} MAD
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {commissions.filter(c => c.is_commission_paid).length} transactions
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-gray-500 text-sm font-medium">Commissions en attente</div>
+          <div className="text-2xl font-bold mt-1 text-amber-600">
+            {(totalCommissions - totalPaid).toFixed(2)} MAD
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {commissions.filter(c => !c.is_commission_paid).length} transactions
+          </div>
+        </div>
+      </div>
+
+      {/* Tableau des commissions */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -209,78 +267,118 @@ export const CommissionsPage: React.FC = () => {
                   Service
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Partenaire
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Montant total
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Montant
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Commission (10%)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Versé au partenaire
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Statut
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Pour le partenaire
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Statut
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {commissions.map((commission) => (
-                <tr key={commission.payment_id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {commission.service_title || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {commission.partner_name || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {commission.total_amount?.toFixed(2)} MAD
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 font-medium">
-                    {commission.admin_commission?.toFixed(2)} MAD
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {commission.partner_amount?.toFixed(2)} MAD
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      commission.is_commission_paid 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {commission.is_commission_paid ? 'Payée' : 'En attente'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {commission.paid_at 
-                      ? format(new Date(commission.paid_at), 'PPpp', { locale: fr }) 
-                      : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {!commission.is_commission_paid && (
-                      <button
-                        onClick={() => markAsPaid(commission.payment_id)}
-                        className="text-emerald-600 hover:text-emerald-900 mr-4"
-                      >
-                        Marquer comme payée
-                      </button>
-                    )}
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-4 text-center">
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
                   </td>
                 </tr>
-              ))}
-              {commissions.length === 0 && (
+              ) : commissions.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
                     Aucune commission trouvée
                   </td>
                 </tr>
+              ) : (
+                commissions.map((commission) => (
+                  <tr key={commission.payment_id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {commission.service_name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {commission.service_type === 'hotel' && 'Hôtel'}
+                        {commission.service_type === 'car' && 'Voiture'}
+                        {commission.service_type === 'tourism' && 'Activité'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {commission.partner_name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm font-medium text-gray-900">
+                        {Number(commission.total_amount).toFixed(2)} MAD
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm font-medium text-amber-600">
+                        {Number(commission.admin_commission).toFixed(2)} MAD
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm font-medium text-green-600">
+                        {Number(commission.partner_amount).toFixed(2)} MAD
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {format(new Date(commission.paid_at), 'PP', { locale: fr })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          commission.is_commission_paid
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {commission.is_commission_paid ? 'Payée' : 'En attente'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() =>
+                          toggleCommissionStatus(
+                            commission.payment_id,
+                            commission.is_commission_paid
+                          )
+                        }
+                        className={`${
+                          commission.is_commission_paid
+                            ? 'text-red-600 hover:text-red-900'
+                            : 'text-green-600 hover:text-green-900'
+                        }`}
+                      >
+                        {commission.is_commission_paid
+                          ? 'Marquer non payée'
+                          : 'Marquer payée'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

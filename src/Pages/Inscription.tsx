@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Loader2, Eye, EyeOff, Check, X } from 'lucide-react';
 import { validateEmail, validatePhoneMaroc as validatePhone } from '../utils/validation';
+import LegalModal from '../components/LegalModal';
 
 interface FormData {
   nom: string;
@@ -42,6 +43,7 @@ const Inscription = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [legalModalType, setLegalModalType] = useState<'mentions' | 'confidentialite' | 'cgv' | null>(null);
 
   // Validation du formulaire
   const validateForm = (): boolean => {
@@ -112,25 +114,40 @@ const Inscription = () => {
     setIsSubmitting(true);
 
     try {
-      await signUp(
+      const { role } = await signUp(
         formData.email.trim(), 
         formData.password,
         {
           first_name: formData.prenom.trim(),
           last_name: formData.nom.trim(),
           phone: formData.telephone.trim() || null,
+          country: 'Maroc', // Valeur par défaut
+          is_verified: false,
         }
       );
       
-      toast.success('Inscription réussie ! Vérifiez votre email pour confirmer votre compte.', {
+      // Si on arrive ici, c'est que l'inscription et la connexion automatique ont réussi
+      toast.success('Inscription réussie ! Vous êtes maintenant connecté.', {
         duration: 6000,
       });
-      navigate('/login');
+      
+      // Pour les nouvelles inscriptions standard, rediriger vers la page d'accueil
+      // car le rôle sera toujours 'client' pour les nouveaux utilisateurs
+      const redirectPath = '/';
+          
+      navigate(redirectPath);
+      
     } catch (error: any) {
       console.error('Registration error:', error);
-      const errorMessage = error?.message?.includes('email') 
-        ? 'Cette adresse email est déjà utilisée'
-        : 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
+      
+      let errorMessage = 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
+      
+      if (error?.message?.includes('email')) {
+        errorMessage = 'Cette adresse email est déjà utilisée';
+      } else if (error?.message?.includes('password')) {
+        errorMessage = 'Le mot de passe ne respecte pas les exigences de sécurité';
+      }
+      
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -382,23 +399,27 @@ const Inscription = () => {
               <div className="ml-3 text-sm">
                 <label htmlFor="terms" className="text-gray-700">
                   J'accepte les{' '}
-                  <Link 
-                    to="/conditions" 
-                    className="text-emerald-600 hover:text-emerald-500 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setLegalModalType('mentions');
+                    }} 
+                    className="text-emerald-600 hover:text-emerald-500 hover:underline focus:outline-none"
                   >
                     conditions d'utilisation
-                  </Link>{' '}
+                  </button>{' '}
                   et la{' '}
-                  <Link 
-                    to="/confidentialite" 
-                    className="text-emerald-600 hover:text-emerald-500 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setLegalModalType('confidentialite');
+                    }} 
+                    className="text-emerald-600 hover:text-emerald-500 hover:underline focus:outline-none"
                   >
                     politique de confidentialité
-                  </Link>{' '}
+                  </button>{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 {errors.terms && (
@@ -413,7 +434,7 @@ const Inscription = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-linear-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? (
                   <>
@@ -424,8 +445,26 @@ const Inscription = () => {
               </button>
             </div>
           </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Vous avez déjà un compte ?{' '}
+              <Link to="/login" className="font-medium text-emerald-600 hover:text-emerald-500">
+                Se connecter
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
+      
+      {/* Modal légale */}
+      {legalModalType && (
+        <LegalModal 
+          isOpen={true}
+          type={legalModalType}
+          onClose={() => setLegalModalType(null)}
+        />
+      )}
     </div>
   );
 };

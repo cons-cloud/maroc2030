@@ -1,50 +1,109 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Loader2, User, Mail, Phone, Building, Home, Car, Compass, ArrowLeftCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import type { UserRole } from '../lib/supabase';
+import { ArrowLeft, Loader2, Eye, EyeOff, User, Mail, Phone, Lock, LogIn } from 'lucide-react';
 import { validateEmail, validatePhoneMaroc as validatePhone } from '../utils/validation';
+
 
 interface FormData {
   nom: string;
   prenom: string;
   email: string;
   telephone: string;
-  entreprise: string;
-  typeService: string;
-  message: string;
+  password: string;
+  confirmPassword: string;
+  terms: boolean;
+  [key: string]: string | boolean; // Index signature pour permettre l'accès par chaîne
 }
 
 const DevenirHote: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { signUp, signInWithGoogle, user } = useAuth();
   
-  // Rediriger vers la page d'inscription
-  useEffect(() => {
-    navigate('/inscription');
-  }, [navigate]);
-
   const [formData, setFormData] = useState<FormData>({
     nom: '',
     prenom: '',
-    email: user?.email || '',
-    telephone: (user?.user_metadata as { phone?: string })?.phone || '',
-    entreprise: '',
-    typeService: 'hotel',
-    message: ''
+    email: '',
+    telephone: '',
+    password: '',
+    confirmPassword: '',
+    terms: false
   });
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+
+  // Validation du formulaire
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.prenom.trim()) {
+      newErrors.prenom = 'Le prénom est requis';
+    }
+
+    if (!formData.nom.trim()) {
+      newErrors.nom = 'Le nom est requis';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'L\'email est requis';
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Veuillez entrer un email valide';
+    }
+
+    if (!formData.telephone.trim()) {
+      newErrors.telephone = 'Le numéro de téléphone est requis';
+    } else if (!validatePhone(formData.telephone)) {
+      newErrors.telephone = 'Numéro de téléphone invalide';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Le mot de passe est requis';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    }
+
+    if (formData.terms !== true) {
+      newErrors.terms = 'Vous devez accepter les conditions d\'utilisation';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Gestion du changement de champ
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const target = e.target as HTMLInputElement;
+    const { name, type } = target;
+    
+    // Gérer le cas des cases à cocher différemment
+    if (type === 'checkbox' && name in formData) {
+      const checked = target.checked;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else {
+      const value = target.value;
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
 
     // Effacer l'erreur quand l'utilisateur commence à taper
-    if (errors[name as keyof FormData]) {
+    if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({
         ...prev,
         [name]: undefined
@@ -52,300 +111,331 @@ const DevenirHote: React.FC = () => {
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
-
-    if (!formData.nom.trim()) newErrors.nom = 'Le nom est requis';
-    if (!formData.prenom.trim()) newErrors.prenom = 'Le prénom est requis';
-    if (!formData.email) {
-      newErrors.email = 'L\'email est requis';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Veuillez entrer un email valide';
+  // Gestion de la connexion avec Google
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+      const { role } = await signInWithGoogle('host');
+      console.log('Connexion Google réussie avec le rôle:', role);
+      
+      // La redirection sera gérée par le composant AuthCallback
+    } catch (error: any) {
+      console.error('Erreur lors de la connexion avec Google:', error);
+      toast.error(error?.message || 'Erreur lors de la connexion avec Google');
+    } finally {
+      setIsGoogleLoading(false);
     }
-    if (formData.telephone && !validatePhone(formData.telephone)) {
-      newErrors.telephone = 'Numéro de téléphone invalide';
-    }
-    if (!formData.entreprise.trim()) newErrors.entreprise = 'Le nom de l\'entreprise est requis';
-    if (!formData.message.trim()) newErrors.message = 'Veuvez décrire votre activité';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Gestion de la soumission du formulaire
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
-    
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
-    
+
     try {
-      // Ici, vous pourriez envoyer les données à votre backend ou à un service d'email
-      // Par exemple :
-      // await api.post('/api/devenir-hote', formData);
+      // Préparer les données utilisateur avec le rôle 'host'
+      const userData = {
+        first_name: formData.prenom.trim(),
+        last_name: formData.nom.trim(),
+        phone: formData.telephone.trim(),
+        role: 'host' as UserRole,
+        is_verified: false,
+        is_active: true
+      };
+
+      console.log('Tentative d\'inscription avec les données:', {
+        email: formData.email.trim(),
+        hasPassword: !!formData.password,
+        userData
+      });
+
+      const { role } = await signUp(
+        formData.email.trim(), 
+        formData.password,
+        userData
+      );
       
-      // Simulation de délai pour l'envoi
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log('Inscription réussie avec le rôle:', role);
       
-      toast.success('Votre demande a été envoyée avec succès ! Nous vous contacterons bientôt.');
-      navigate('/');
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi de la demande:', error);
-      toast.error('Une erreur est survenue. Veuillez réessayer.');
+      toast.success('Inscription réussie ! Vous pouvez maintenant vous connecter.', {
+        duration: 5000,
+      });
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      const errorMessage = error?.message?.includes('email') 
+        ? 'Cette adresse email est déjà utilisée'
+        : 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const serviceTypes = [
-    { value: 'hotel', label: 'Hôtel', icon: <Home className="w-5 h-5" /> },
-    { value: 'appartement', label: 'Appartement', icon: <Building className="w-5 h-5" /> },
-    { value: 'villa', label: 'Villa', icon: <Home className="w-5 h-5" /> },
-    { value: 'voiture', label: 'Location de voiture', icon: <Car className="w-5 h-5" /> },
-    { value: 'tourisme', label: 'Activité touristique', icon: <Compass className="w-5 h-5" /> },
-    { value: 'autre', label: 'Autre', icon: <User className="w-5 h-5" /> },
-  ];
+  // Styles réutilisables
+  const inputClass = (field: keyof FormData) => 
+    `block w-full px-4 py-2 rounded-lg border ${
+      errors[field] 
+        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+        : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+    } shadow-sm sm:text-sm`;
+
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-emerald-100 hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors"
-          >
-            <ArrowLeftCircle className="w-5 h-5 mr-2" />
-            Retour à l'accueil
-          </button>
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center px-4 py-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-lg transition-colors"
-            aria-label="Retour"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Retour
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full mx-auto">
+        <Link 
+          to="/"
+          className="flex items-center text-gray-600 hover:text-emerald-600 transition-colors mb-6 group"
+          aria-label="Retour à l'accueil"
+        >
+          <ArrowLeft className="h-5 w-5 mr-2 transition-transform group-hover:-translate-x-0.5" />
+          Retour à l'accueil
+        </Link>
 
-        <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
-          <div className="p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Devenir Hôte sur Maroc 2030</h1>
-              <p className="text-gray-600">Rejoignez notre communauté de partenaires et commencez à gagner de l'argent avec vos biens ou services.</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-1">
-                    Prénom <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      id="prenom"
-                      name="prenom"
-                      value={formData.prenom}
-                      onChange={handleChange}
-                      className={`pl-10 block w-full rounded-lg border ${
-                        errors.prenom ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
-                      } shadow-sm sm:text-sm`}
-                      placeholder="Votre prénom"
-                    />
-                  </div>
-                  {errors.prenom && <p className="mt-1 text-sm text-red-600">{errors.prenom}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nom <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      id="nom"
-                      name="nom"
-                      value={formData.nom}
-                      onChange={handleChange}
-                      className={`pl-10 block w-full rounded-lg border ${
-                        errors.nom ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
-                      } shadow-sm sm:text-sm`}
-                      placeholder="Votre nom"
-                    />
-                  </div>
-                  {errors.nom && <p className="mt-1 text-sm text-red-600">{errors.nom}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className={`pl-10 block w-full rounded-lg border ${
-                        errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
-                      } shadow-sm sm:text-sm`}
-                      placeholder="votre@email.com"
-                      disabled={!!user?.email}
-                    />
-                  </div>
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Téléphone
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Phone className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="tel"
-                      id="telephone"
-                      name="telephone"
-                      value={formData.telephone}
-                      onChange={handleChange}
-                      className={`pl-10 block w-full rounded-lg border ${
-                        errors.telephone ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
-                      } shadow-sm sm:text-sm`}
-                      placeholder="+212 6 12 34 56 78"
-                    />
-                  </div>
-                  {errors.telephone && <p className="mt-1 text-sm text-red-600">{errors.telephone}</p>}
-                </div>
-              </div>
-
+<div className="mt-8 bg-white py-8 px-6 shadow-lg sm:rounded-xl">
+          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+            <div className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="entreprise" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom de l'établissement ou de l'entreprise <span className="text-red-500">*</span>
+                <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-1">
+                  Prénom <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building className="h-5 w-5 text-gray-400" />
+                    <User className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     type="text"
-                    id="entreprise"
-                    name="entreprise"
-                    value={formData.entreprise}
+                    id="prenom"
+                    name="prenom"
+                    value={formData.prenom}
+                    onChange={handleChange}
+                    className={`pl-10 ${inputClass('prenom')}`}
+                    placeholder="Votre prénom"
+                  />
+                </div>
+                {errors.prenom && <p className="mt-1 text-sm text-red-600">{errors.prenom}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="nom"
+                    name="nom"
+                    value={formData.nom}
                     onChange={handleChange}
                     className={`pl-10 block w-full rounded-lg border ${
-                      errors.entreprise ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                      errors.nom ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
                     } shadow-sm sm:text-sm`}
-                    placeholder="Le nom de votre établissement ou entreprise"
+                    placeholder="Votre nom"
                   />
                 </div>
-                {errors.entreprise && <p className="mt-1 text-sm text-red-600">{errors.entreprise}</p>}
+                {errors.nom && <p className="mt-1 text-sm text-red-600">{errors.nom}</p>}
               </div>
+            </div>
 
-              <div>
-                <label htmlFor="typeService" className="block text-sm font-medium text-gray-700 mb-1">
-                  Type de service proposé <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {serviceTypes.map((service) => (
-                    <div key={service.value} className="flex items-center">
-                      <input
-                        id={`service-${service.value}`}
-                        name="typeService"
-                        type="radio"
-                        value={service.value}
-                        checked={formData.typeService === service.value}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
-                      />
-                      <label htmlFor={`service-${service.value}`} className="ml-2 flex items-center text-sm text-gray-700">
-                        <span className="mr-1">{service.icon}</span>
-                        {service.label}
-                      </label>
-                    </div>
-                  ))}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
                 </div>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                  Décrivez votre activité <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={4}
-                  value={formData.message}
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleChange}
-                  className={`block w-full rounded-lg border ${
-                    errors.message ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                  className={`pl-10 block w-full rounded-lg border ${
+                    errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
                   } shadow-sm sm:text-sm`}
-                  placeholder="Décrivez votre établissement, vos services, votre localisation, etc."
+                  placeholder="votre@email.com"
                 />
-                {errors.message && <p className="mt-1 text-sm text-red-600">{errors.message}</p>}
               </div>
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+            </div>
 
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="terms"
-                    name="terms"
-                    type="checkbox"
-                    required
-                    className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                  />
+            <div>
+              <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
+                Téléphone <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-400" />
                 </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="terms" className="font-medium text-gray-700">
-                    J'accepte les <a href="/conditions-generales" className="text-emerald-600 hover:text-emerald-500">conditions d'utilisation</a> et la <a href="/politique-de-confidentialite" className="text-emerald-600 hover:text-emerald-500">politique de confidentialité</a>.
-                  </label>
-                </div>
+                <input
+                  type="tel"
+                  id="telephone"
+                  name="telephone"
+                  value={formData.telephone}
+                  onChange={handleChange}
+                  className={`pl-10 block w-full rounded-lg border ${
+                    errors.telephone ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                  } shadow-sm sm:text-sm`}
+                  placeholder="+212 6 12 34 56 78"
+                />
               </div>
+              {errors.telephone && <p className="mt-1 text-sm text-red-600">{errors.telephone}</p>}
+            </div>
 
-              <div className="pt-2">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Mot de passe <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`pl-10 pr-10 block w-full rounded-lg border ${
+                    errors.password ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                  } shadow-sm sm:text-sm`}
+                  placeholder="••••••••"
+                />
                 <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
-                      Envoi en cours...
-                    </>
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500" />
                   ) : (
-                    'Envoyer ma demande'
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-500" />
                   )}
                 </button>
               </div>
-            </form>
-          </div>
-          
-          <div className="bg-gray-50 px-8 py-6 border-t border-gray-200">
-            <div className="text-center">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Vous avez des questions ?</h3>
-              <p className="text-gray-600 mb-4">Notre équipe est là pour vous aider.</p>
-              <a
-                href="mailto:partenaires@maroc2030.ma"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-emerald-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-              >
-                <Mail className="-ml-1 mr-2 h-5 w-5 text-emerald-500" />
-                Contactez-nous
-              </a>
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirmer le mot de passe <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`pl-10 pr-10 block w-full rounded-lg border ${
+                    errors.confirmPassword ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                  } shadow-sm sm:text-sm`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-500" />
+                  )}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+            </div>
+
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  checked={formData.terms}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="terms" className="font-medium text-gray-700">
+                  J'accepte les <a href="/conditions-generales" className="text-emerald-600 hover:text-emerald-500">conditions d'utilisation</a> et la <a href="/politique-de-confidentialite" className="text-emerald-600 hover:text-emerald-500">politique de confidentialité</a>.
+                </label>
+                {errors.terms && <p className="mt-1 text-sm text-red-600">{errors.terms}</p>}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
+                    Inscription en cours...
+                  </>
+                ) : (
+                  "S'inscrire"
+                )}
+              </button>
+            </div>
+
+            <div className="relative mt-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Ou continuez avec</span>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isGoogleLoading || isSubmitting}
+                className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isGoogleLoading ? (
+                  <Loader2 className="animate-spin h-5 w-5 text-gray-600 mr-2" />
+                ) : (
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+                    <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
+                      <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.28426 53.749 C -8.52426 55.229 -9.21677 56.479 -10.0802 57.329 L -10.0922 57.429 L -4.09769 62.109 L -3.999 62.109 C -1.199 59.349 0.001 55.599 0.001 51.509 C 0.001 50.869 -0.033 50.229 -0.097 49.589 L -3.264 51.509 Z"/>
+                      <path fill="#34A853" d="M -14.754 63.999 C -9.44398 63.999 -4.84298 62.059 -1.62299 58.689 L -6.85201 54.199 C -8.47201 55.719 -10.603 56.669 -14.754 56.669 C -17.864 56.669 -20.614 55.469 -22.604 53.529 L -22.604 53.529 L -26.826 57.549 C -24.016 61.199 -19.704 63.999 -14.754 63.999 Z"/>
+                      <path fill="#FBBC05" d="M -25.284 46.239 C -24.184 45.539 -22.864 45.039 -21.434 44.739 L -21.434 44.739 L -21.434 39.999 L -26.824 40.009 C -28.964 44.269 -28.964 49.729 -26.824 53.989 L -22.604 53.989 C -23.744 51.529 -23.744 48.699 -25.284 46.239 Z"/>
+                      <path fill="#EA4335" d="M -14.754 38.339 C -12.094 38.339 -9.704 39.229 -7.824 40.969 L -7.824 40.969 L -3.524 36.669 C -7.304 33.139 -12.334 30.999 -14.754 30.999 C -19.704 30.999 -24.014 33.809 -26.824 37.459 L -21.434 44.739 C -19.524 40.429 -15.184 38.339 -14.754 38.339 Z"/>
+                    </g>
+                  </svg>
+                )}
+                S'inscrire avec Google
+              </button>
+            </div>
+          </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Vous avez déjà un compte ?{' '}
+              <Link to="/login" className="font-medium text-emerald-600 hover:text-emerald-500">
+                Connectez-vous
+              </Link>
+            </p>
           </div>
         </div>
       </div>

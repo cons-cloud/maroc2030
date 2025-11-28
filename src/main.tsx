@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter } from 'react-router-dom';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import App from './App';
 import './index.css';
 
@@ -76,11 +77,11 @@ root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <CurrencyProvider>
+          <App />
+          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        </CurrencyProvider>
       </BrowserRouter>
-      {import.meta.env.DEV && (
-        <ReactQueryDevtools initialIsOpen={false} position="bottom" />
-      )}
     </QueryClientProvider>
   </React.StrictMode>
 );

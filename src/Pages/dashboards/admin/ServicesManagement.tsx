@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
+import useRealtimeSubscription from '../../../hooks/useRealtimeSubscription';
 
 interface Service {
   id: string;
@@ -30,10 +31,39 @@ const ServicesManagement: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [categories, setCategories] = useState<any[]>([]);
 
+  // Chargement initial des données
   useEffect(() => {
-    loadServices();
-    loadCategories();
+    const initializeData = async () => {
+      await Promise.all([loadServices(), loadCategories()]);
+    };
+    initializeData();
   }, []);
+
+  // Abonnement aux mises à jour en temps réel des services
+  useRealtimeSubscription({
+    table: 'services',
+    event: '*',
+    callback: async (payload) => {
+      console.log('Mise à jour du service détectée:', payload);
+      const loadingToast = toast.loading('Mise à jour des services...');
+      try {
+        await loadServices();
+        toast.success('Services mis à jour avec succès', { id: loadingToast });
+      } catch (error) {
+        toast.error('Erreur lors de la mise à jour', { id: loadingToast });
+      }
+    },
+  });
+
+  // Abonnement aux mises à jour des catégories
+  useRealtimeSubscription({
+    table: 'service_categories',
+    event: '*',
+    callback: () => {
+      console.log('Mise à jour des catégories détectée');
+      loadCategories();
+    },
+  });
 
   const loadServices = async () => {
     try {

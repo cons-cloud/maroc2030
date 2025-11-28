@@ -1,23 +1,75 @@
-# robots.txt pour Maroc 2030
-# Optimisé pour Google, Bing, Yahoo, Baidu
+# robots.txt pour 2030 Maroc
+# Dernière mise à jour : 28/11/2024
 
 User-agent: *
 Allow: /
+Allow: /devenir-hote
+Allow: /services
+Allow: /evenements
+Allow: /immobilier
+Allow: /annonces
+Allow: /apropos
+Allow: /contact
+Allow: /recherche
 
 # Pages à ne pas indexer
 Disallow: /dashboard/
-Disallow: /login
-Disallow: /inscription
-Disallow: /payment
+Disallow: /admin/
 Disallow: /api/
-
-# Fichiers à ne pas indexer
+Disallow: /private/
+Disallow: /test/
+Disallow: /tmp/
+Disallow: /node_modules/
+Disallow: /vendor/
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-json/
+Disallow: /xmlrpc.php
+Disallow: /wp-login.php
+Disallow: /wp-register.php
+Disallow: /search
+Disallow: /?s=
+Disallow: /*?s=
+Disallow: /*?*
 Disallow: /*.json$
 Disallow: /*.xml$
 Disallow: /*.txt$
+Disallow: /*.js$
+Disallow: /*.css$
 
-# Autoriser les ressources importantes
-Allow: /assets/
+# Fichiers à indexer
+Allow: /sitemap.xml
+Allow: /sitemap_index.xml
+Allow: /*.html
+Allow: /*.php
+
+# Paramètres d'exploration
+Crawl-delay: 10
+
+# Sitemaps
+Sitemap: https://maroc2030.ma/sitemap.xml
+Sitemap: https://maroc2030.ma/sitemap-pages.xml
+Sitemap: https://maroc2030.ma/sitemap-posts.xml
+
+# Configuration spécifique pour les moteurs de recherche
+User-agent: Googlebot
+Allow: /*
+Disallow: /private/
+Disallow: /admin/
+Crawl-delay: 5
+
+User-agent: Bingbot
+Allow: /*
+Disallow: /private/
+Disallow: /admin/
+Crawl-delay: 10
+
+User-agent: Yandex
+Allow: /*
+Disallow: /private/
+Disallow: /admin/
+Crawl-delay: 15
+Clean-param: ref /
 Allow: /*.css
 Allow: /*.js
 Allow: /*.jpg

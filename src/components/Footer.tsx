@@ -95,7 +95,7 @@ const Footer = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             {/* About Section */}
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-primary">Maroc <span className="text-primary font-bold text-2xl color-green-500">2030</span></h3>
+              <h3 className="text-2xl font-bold text-primary">2030<span className="text-green-500 font-bold text-2xl">Maroc</span></h3>
               <p className="text-gray-300 text-sm leading-relaxed">
                 Découvrez la beauté intemporelle de Meknès avec nous. Nous proposons des expériences uniques et des séjours mémorables dans la ville impériale.
               </p>
@@ -138,11 +138,11 @@ const Footer = () => {
                 </li>
                 <li className="flex items-center">
                   <FaPhone className="mr-3 text-primary" />
-                  <a href="tel:+212612345678" className="text-gray-300 hover:text-primary transition-colors">+212 6 12 34 56 78</a>
+                  <a href="tel:+212669742780" className="text-gray-300 hover:text-primary transition-colors">+212 669-742780</a>
                 </li>
                 <li className="flex items-center">
                   <FaEnvelope className="mr-3 text-primary" />
-                  <a href="mailto:contact@maroc2030.ma" className="text-gray-300 hover:text-primary transition-colors">contact@maroc2030.ma</a>
+                  <a href="mailto:Imam@orange.fr" className="text-gray-300 hover:text-primary transition-colors">Imam@orange.fr</a>
                 </li>
               </ul>
             </div>
@@ -178,15 +178,15 @@ const Footer = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="text-center md:text-left">
                 <p className="text-gray-400 text-sm mb-2">
-                  © {currentYear} Maroc 2030. Tous droits réservés.
+                  © {currentYear} 2030Maroc. Tous droits réservés.
                 </p>
-                <p className="text-gray-500 text-xs">
+                <p className="text-gray-500 text-sm">
                   Réalisé par{' '}
                   <a 
                     href="https://marocgestionentreprendre.com" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-primary hover:text-primary/80 transition-colors font-medium"
+                    className="text-primary hover:text-primary/80 transition-colors font-medium text-sm"
                   >
                     Maroc Gestion Entreprendre
                   </a>

@@ -47,10 +47,14 @@ export const validateEmail = (email: string): boolean => {
 
 /**
  * Valide un numéro de téléphone marocain
+ * - Format Maroc: +212XXXXXXXXX ou 0XXXXXXXXX
+ * - Doit commencer par 05, 06 ou 07 pour les numéros locaux
+ * - Doit commencer par +2125, +2126 ou +2127 pour les numéros internationaux
  */
 export const validatePhoneMaroc = (phone: string): boolean => {
-  // Format: +212XXXXXXXXX ou 0XXXXXXXXX
-  const phoneRegex = /^(\+212|0)[5-7]\d{8}$/;
+  // Format Maroc: +212 suivi de 9 chiffres commençant par 5, 6 ou 7
+  // ou format local Maroc: 0 suivi de 9 chiffres commençant par 5, 6 ou 7
+  const phoneRegex = /^(\+212[5-7]\d{8}|0[5-7]\d{8})$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 };
 
@@ -335,6 +339,86 @@ export const encodeURLParams = (params: Record<string, any>): string => {
   return Object.keys(params)
     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
     .join('&');
+};
+
+/**
+ * Valide un numéro de compte bancaire
+ */
+export const validateBankAccount = (account: string): { isValid: boolean; error?: string } => {
+  if (!account) return { isValid: false, error: 'Le numéro de compte est requis' };
+  if (!/^[0-9]{5,20}$/.test(account)) {
+    return { 
+      isValid: false, 
+      error: 'Le numéro de compte doit contenir entre 5 et 20 chiffres' 
+    };
+  }
+  return { isValid: true };
+};
+
+/**
+ * Valide un IBAN
+ */
+export const validateIBAN = (iban: string): { isValid: boolean; error?: string } => {
+  if (!iban) return { isValid: false, error: "L'IBAN est requis" };
+  
+  // Supprimer les espaces et mettre en majuscules
+  const cleanIban = iban.replace(/\s+/g, '').toUpperCase();
+  
+  // Vérifier le format de base de l'IBAN
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$/.test(cleanIban)) {
+    return { 
+      isValid: false, 
+      error: 'Format IBAN invalide' 
+    };
+  }
+  
+  // Vérification du code pays (exemple pour le Maroc: MA)
+  const countryCode = cleanIban.substring(0, 2);
+  const ibanLengths: Record<string, number> = {
+    'MA': 28,  // Maroc
+    'FR': 27,  // France
+    'BE': 19,  // Belgique
+    'ES': 24,  // Espagne
+    'DE': 22,  // Allemagne
+  };
+  
+  const expectedLength = ibanLengths[countryCode];
+  if (expectedLength && cleanIban.length !== expectedLength) {
+    return { 
+      isValid: false, 
+      error: `L'IBAN ${countryCode} doit contenir ${expectedLength} caractères` 
+    };
+  }
+  
+  // Vérification du checksum IBAN
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
+  // Déplacer les 4 premiers caractères à la fin
+  const rearranged = cleanIban.substring(4) + cleanIban.substring(0, 4);
+  
+  // Convertir les lettres en chiffres (A=10, B=11, ..., Z=35)
+  let numericIban = '';
+  for (const char of rearranged) {
+    const num = letters.includes(char) 
+      ? (10 + letters.indexOf(char)).toString() 
+      : char;
+    numericIban += num;
+  }
+  
+  // Vérifier que le modulo 97 est égal à 1
+  let remainder = '';
+  for (let i = 0; i < numericIban.length; i += 16) {
+    const chunk = remainder + numericIban.substring(i, i + 16);
+    const num = BigInt(chunk) % 97n;
+    remainder = num.toString().padStart(2, '0');
+  }
+  
+  const isValid = remainder === '01';
+  return {
+    isValid,
+    error: isValid ? undefined : 'IBAN invalide (vérifiez le numéro)'
+  };
 };
 
 /**

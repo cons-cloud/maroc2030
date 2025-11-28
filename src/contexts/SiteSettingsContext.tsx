@@ -145,8 +145,8 @@ export const useSiteSettings = () => {
 // ================================================
 const getDefaultSettings = (): SiteSettings => ({
   // Contact
-  email: 'contact@maroc2030.com',
-  phone_primary: '+212 6 12 34 56 78',
+  email: 'Imam@orange.fr',
+  phone_primary: '+212 669-742780',
   phone_secondary: '',
   address: '123 Avenue Mohammed V',
   city: 'Marrakech',
