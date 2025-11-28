@@ -149,3 +149,4 @@ yarn-error.log*
 .vscode
 *.sublime-*
 *.code-workspace
+STRIPE_SETUP_GUIDE.md
