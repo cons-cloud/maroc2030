@@ -3,7 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import Navbar from '../../../components/Navbar';
 import { User, Mail, Phone, MapPin, Save, Loader } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 // Interface pour typer les données du profil
 interface UserProfile {
@@ -17,6 +17,7 @@ interface UserProfile {
 }
 
 const ClientProfileComponent = () => {
+  const { toast } = useToast();
   console.log('[ClientProfile] Rendu du composant');
   
   // État pour gérer le chargement et les erreurs
@@ -91,10 +92,10 @@ const ClientProfileComponent = () => {
         
       if (error) throw error;
       
-      toast.success('Profil mis à jour avec succès');
+      toast.success('Succès', 'Votre profil a été mis à jour avec succès');
     } catch (error: any) {
       console.error('Erreur lors de la mise à jour du profil:', error);
-      toast.error(error.message || 'Une erreur est survenue');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de la mise à jour du profil');
     } finally {
       setLoading(false);
     }

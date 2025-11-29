@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { MessageSquare, Mail, Trash2, Phone, Calendar, Eye, EyeOff, Search } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const MessagesManagement: React.FC = () => {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,7 +28,7 @@ const MessagesManagement: React.FC = () => {
       setMessages(data || []);
     } catch (error) {
       console.error('Error loading messages:', error);
-      toast.error('Erreur lors du chargement des messages');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des messages');
     } finally {
       setLoading(false);
     }
@@ -48,13 +49,13 @@ const MessagesManagement: React.FC = () => {
         .eq('id', messageToDelete.id);
 
       if (error) throw error;
-      toast.success('Message supprimé');
+      toast.success('Succès', 'Le message a été supprimé avec succès');
       setShowConfirm(false);
       setMessageToDelete(null);
       loadMessages();
     } catch (error) {
       console.error('Error deleting message:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du message');
     }
   };
 
@@ -66,11 +67,11 @@ const MessagesManagement: React.FC = () => {
         .eq('id', message.id);
 
       if (error) throw error;
-      toast.success(message.is_read ? 'Marqué comme non lu' : 'Marqué comme lu');
+      toast.success('Succès', message.is_read ? 'Le message a été marqué comme non lu' : 'Le message a été marqué comme lu');
       loadMessages();
     } catch (error) {
       console.error('Error updating message:', error);
-      toast.error('Erreur lors de la mise à jour');
+      toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour du statut de lecture');
     }
   };
 

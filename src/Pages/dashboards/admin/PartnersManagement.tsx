@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Button from "@/components/ui/button";
-import { toast } from "react-hot-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { 
   Check, 
@@ -214,6 +214,7 @@ interface Filters {
 const ITEMS_PER_PAGE = 10;
 
 const PartnersManagement = () => {
+  const { toast } = useToast();
   // États principaux
   const [partners, setPartners] = useState<Partner[]>([]);
   const [stats, setStats] = useState({
@@ -383,10 +384,10 @@ const PartnersManagement = () => {
       
       // Fermeture de la boîte de dialogue
       setDeletingPartner(null);
-      toast.success('Partenaire supprimé avec succès');
+      toast.success('Succès', 'Le partenaire a été supprimé avec succès');
     } catch (error) {
       console.error('Erreur lors de la suppression du partenaire:', error);
-      toast.error('Erreur lors de la suppression du partenaire');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du partenaire');
     } finally {
       setIsDeleting(false);
     }
@@ -413,10 +414,10 @@ const PartnersManagement = () => {
         )
       );
       
-      toast.success(`Partenaire ${!currentStatus ? 'vérifié' : 'désactivé'} avec succès`);
+      toast.success('Succès', `Le partenaire a été ${!currentStatus ? 'vérifié' : 'désactivé'} avec succès`);
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut de vérification:', error);
-      toast.error('Erreur lors de la mise à jour du statut de vérification');
+      toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour du statut de vérification');
     } finally {
       setLoadingActions(prev => ({ ...prev, [`verify-${id}`]: false }));
     }
@@ -460,14 +461,14 @@ const PartnersManagement = () => {
         )
       );
       
-      toast.success('Détails bancaires mis à jour avec succès');
+      toast.success('Succès', 'Les détails bancaires ont été mis à jour avec succès');
       setEditingBankDetails(prev => ({ 
         ...prev, 
         [editingPartner.id]: false 
       }));
     } catch (error) {
       console.error('Erreur lors de la mise à jour des détails bancaires:', error);
-      toast.error('Erreur lors de la mise à jour des détails bancaires');
+      toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour des détails bancaires');
     }
   };
 

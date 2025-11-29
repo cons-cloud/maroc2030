@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Calendar, Plus, Edit, Trash2, MapPin } from 'lucide-react';
 import ImageWithFallback from '../../../components/common/ImageWithFallback';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import EvenementForm from '../../../components/forms/EvenementForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const EvenementsManagement: React.FC = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +43,7 @@ const EvenementsManagement: React.FC = () => {
       setItems(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des événements:', error);
-      toast.error('Erreur lors du chargement des événements. Veuillez réessayer.');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des événements. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -68,12 +69,12 @@ const EvenementsManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('evenements').delete().eq('id', evenementToDelete.id);
       if (error) throw error;
-      toast.success('Événement supprimé');
+      toast.success('Succès', 'L\'événement a été supprimé avec succès');
       setShowConfirm(false);
       setEvenementToDelete(null);
       loadItems();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de l\'événement');
     }
   };
 

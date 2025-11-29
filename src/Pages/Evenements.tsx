@@ -6,7 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import UniversalBookingForm from '../components/UniversalBookingForm';
 import AuthGuard from '../components/AuthGuard';
 import { supabase } from '../lib/supabase';
-import toast from 'react-hot-toast';
+import { useToast } from '../components/ui/use-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const stripePromise = loadStripe(import.meta.env['VITE_STRIPE_PUBLIC_KEY'] || 'pk_test_51QKxxx');
@@ -103,6 +103,7 @@ const staticEvents: Event[] = [
 ];
 
 const Evenements = () => {
+  const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -152,7 +153,7 @@ const Evenements = () => {
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Veuillez entrer votre email');
+      toast.error('Erreur', 'Veuillez entrer votre email');
       return;
     }
 
@@ -168,17 +169,17 @@ const Evenements = () => {
 
       if (error) {
         if (error.code === '23505') {
-          toast.error('Cet email est déjà inscrit');
+          toast.error('Erreur', 'Cet email est déjà inscrit à notre newsletter');
         } else {
           throw error;
         }
       } else {
-        toast.success('Merci de votre inscription !');
+        toast.success('Succès', 'Merci de votre inscription à notre newsletter !');
         setEmail('');
       }
     } catch (error: any) {
       console.error('Erreur lors de l\'inscription:', error);
-      toast.error('Erreur lors de l\'inscription');
+      toast.error('Erreur', 'Une erreur est survenue lors de l\'inscription à la newsletter');
     } finally {
       setIsSubscribing(false);
     }

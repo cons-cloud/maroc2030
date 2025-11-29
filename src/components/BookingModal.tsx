@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { X, CreditCard, MapPin, Loader } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from './ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../config/routes';
 
@@ -20,6 +20,7 @@ interface BookingModalProps {
 }
 
 const BookingModalComponent: React.FC<BookingModalProps> = ({ isOpen, onClose, service }) => {
+  const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -65,7 +66,7 @@ const BookingModalComponent: React.FC<BookingModalProps> = ({ isOpen, onClose, s
     e.preventDefault();
     
     if (!formData.startDate || !formData.endDate) {
-      toast.error('Veuillez sélectionner les dates');
+      toast.error('Erreur', 'Veuillez sélectionner les dates de début et de fin');
       return;
     }
 
@@ -74,7 +75,7 @@ const BookingModalComponent: React.FC<BookingModalProps> = ({ isOpen, onClose, s
     const endDate = new Date(formData.endDate);
     
     if (endDate <= startDate) {
-      toast.error('La date de fin doit être postérieure à la date de début');
+      toast.error('Erreur', 'La date de fin doit être postérieure à la date de début');
       return;
     }
 
@@ -136,11 +137,11 @@ const BookingModalComponent: React.FC<BookingModalProps> = ({ isOpen, onClose, s
         }
       });
 
-      toast.success('Réservation créée avec succès !');
+      toast.success('Succès', 'Votre réservation a été créée avec succès !');
       onClose();
     } catch (error: any) {
       console.error('Error creating booking:', error);
-      toast.error(error.message || 'Erreur lors de la création de la réservation');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de la création de votre réservation');
     } finally {
       setLoading(false);
     }

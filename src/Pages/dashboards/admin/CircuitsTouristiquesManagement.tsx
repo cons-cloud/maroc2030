@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Map, Plus, Edit, Trash2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import CircuitForm from '../../../components/forms/CircuitForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const CircuitsTouristiquesManagement: React.FC = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +29,7 @@ const CircuitsTouristiquesManagement: React.FC = () => {
       setItems(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des circuits touristiques');
     } finally {
       setLoading(false);
     }
@@ -54,12 +55,12 @@ const CircuitsTouristiquesManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('circuits_touristiques').delete().eq('id', circuitToDelete.id);
       if (error) throw error;
-      toast.success('Circuit supprimé');
+      toast.success('Succès', 'Le circuit a été supprimé avec succès');
       setShowConfirm(false);
       setCircuitToDelete(null);
       loadItems();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du circuit');
     }
   };
 

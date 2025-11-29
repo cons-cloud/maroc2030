@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { 
   Calendar, 
   Users, 
@@ -33,6 +33,7 @@ interface Booking {
 }
 
 const CircuitBookingsManagement = () => {
+  const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
@@ -66,7 +67,7 @@ const CircuitBookingsManagement = () => {
       setBookings(formattedBookings);
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors du chargement des réservations');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des réservations');
     } finally {
       setLoading(false);
     }
@@ -80,11 +81,11 @@ const CircuitBookingsManagement = () => {
         .eq('id', bookingId);
 
       if (error) throw error;
-      toast.success('Statut mis à jour');
+      toast.success('Succès', 'Le statut a été mis à jour avec succès');
       loadBookings();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la mise à jour');
+      toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour du statut');
     }
   };
 

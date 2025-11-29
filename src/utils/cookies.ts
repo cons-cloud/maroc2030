@@ -1,8 +1,15 @@
-import { CookieAttributes } from 'js-cookie';
 import Cookies from 'js-cookie';
 
+type CookieAttributesType = {
+  path?: string;
+  expires?: number | Date;
+  domain?: string;
+  secure?: boolean;
+  sameSite?: 'strict' | 'lax' | 'none';
+};
+
 // Configuration des cookies
-export const COOKIE_CONFIG: CookieAttributes = {
+export const COOKIE_CONFIG: CookieAttributesType = {
   path: '/',
   sameSite: 'lax',
   secure: process.env.NODE_ENV === 'production',

@@ -7,17 +7,26 @@ const Dialog = DialogPrimitive.Root
 
 const DialogTrigger = DialogPrimitive.Trigger
 
+interface DialogPortalProps extends React.ComponentProps<typeof DialogPrimitive.Portal> {
+  className?: string;
+  children: React.ReactNode;
+}
+
 const DialogPortal = ({
   className,
   children,
   ...props
-}: DialogPrimitive.DialogPortalProps) => (
-  <DialogPrimitive.Portal className={cn(className)} {...props}>
-    <div className="fixed inset-0 z-50 flex items-start justify-center sm:items-center">
-      {children}
-    </div>
-  </DialogPrimitive.Portal>
-)
+}: DialogPortalProps) => {
+  const { container, ...restProps } = props as any;
+  
+  return (
+    <DialogPrimitive.Portal container={container}>
+      <div className={cn("fixed inset-0 z-50 flex items-start justify-center sm:items-center", className)}>
+        {children}
+      </div>
+    </DialogPrimitive.Portal>
+  );
+}
 DialogPortal.displayName = DialogPrimitive.Portal.displayName
 
 const DialogOverlay = React.forwardRef<

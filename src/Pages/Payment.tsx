@@ -14,11 +14,12 @@ import {
   ArrowLeft,
   Shield
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { MESSAGES } from '../constants/messages';
 import { formatDualCurrency, formatMad, formatEur, madToEur } from '../utils/currency';
 
 const Payment: React.FC = () => {
+  const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, user } = useAuth();
@@ -58,12 +59,12 @@ const Payment: React.FC = () => {
         } else {
           // Supprimer la réservation expirée
           sessionStorage.removeItem('pendingReservation');
-          toast.info(MESSAGES.BOOKING.SESSION_EXPIRED);
+          toast.info('Information', MESSAGES.BOOKING.SESSION_EXPIRED);
         }
       }
     } catch (error) {
       console.error('Erreur lors de la vérification des réservations en attente:', error);
-      toast.error(MESSAGES.ERROR.DEFAULT);
+      toast.error('Erreur', MESSAGES.ERROR.DEFAULT);
     }
     return false;
   }, []);
@@ -97,7 +98,7 @@ const Payment: React.FC = () => {
     } else if (!bookingId || !totalPrice) {
       // Vérifier s'il y a une réservation en attente avant de rediriger
       if (!checkPendingReservation()) {
-        toast.error(MESSAGES.PAYMENT.MISSING_INFO);
+        toast.error('Erreur', MESSAGES.PAYMENT.MISSING_INFO);
         navigate('/');
       }
     }
@@ -143,7 +144,7 @@ const Payment: React.FC = () => {
 
     } catch (error) {
       console.error('Erreur lors de la création de la réservation:', error);
-      toast.error('Erreur lors de la création de la réservation');
+      toast.error('Erreur', 'Erreur lors de la création de la réservation');
       navigate('/');
     } finally {
       setLoading(false);
@@ -222,7 +223,7 @@ const Payment: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error processing payment:', error);
-      toast.error(error.message || 'Erreur lors du traitement du paiement');
+      toast.error('Erreur', error.message || 'Erreur lors du traitement du paiement');
     } finally {
       setLoading(false);
     }

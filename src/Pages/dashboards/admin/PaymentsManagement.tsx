@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { CreditCard, Search, Filter } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 const PaymentsManagement: React.FC = () => {
+  const { toast } = useToast();
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,7 +87,7 @@ const PaymentsManagement: React.FC = () => {
         hint: err.hint
       });
       
-      toast.error('Erreur lors du chargement des paiements. Veuillez vérifier votre connexion et réessayer.');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des paiements. Veuillez vérifier votre connexion et réessayer.');
     } finally {
       setLoading(false);
     }

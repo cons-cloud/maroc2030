@@ -3,10 +3,11 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import Navbar from '../../../components/Navbar';
 import { Lock, Bell, Shield, Trash2, Save, Loader, Eye, EyeOff } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 const ClientSettings = () => {
+  const { toast } = useToast();
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -29,12 +30,12 @@ const ClientSettings = () => {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error('Erreur', 'Les mots de passe ne correspondent pas');
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+      toast.error('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
@@ -47,7 +48,7 @@ const ClientSettings = () => {
 
       if (error) throw error;
 
-      toast.success('Mot de passe modifié avec succès !');
+      toast.success('Succès', 'Mot de passe modifié avec succès !');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -55,7 +56,7 @@ const ClientSettings = () => {
       });
     } catch (error: any) {
       console.error('Error updating password:', error);
-      toast.error(error.message || 'Erreur lors de la modification du mot de passe');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de la modification du mot de passe');
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,7 @@ const ClientSettings = () => {
       ...notifications,
       [key]: !notifications[key as keyof typeof notifications],
     });
-    toast.success('Préférences mises à jour');
+    toast.success('Succès', 'Préférences de notification mises à jour');
   };
 
   const handleDeleteAccount = async () => {
@@ -93,12 +94,12 @@ const ClientSettings = () => {
 
       if (profileError) throw profileError;
 
-      toast.success('Compte supprimé avec succès');
+      toast.success('Succès', 'Votre compte a été supprimé avec succès');
       await signOut();
       navigate('/');
     } catch (error) {
       console.error('Error deleting account:', error);
-      toast.error('Erreur lors de la suppression du compte');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du compte');
     } finally {
       setLoading(false);
     }

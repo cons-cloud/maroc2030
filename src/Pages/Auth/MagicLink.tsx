@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { ROUTES } from '../../config/routes';
 
 export default function MagicLink() {
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -14,7 +15,7 @@ export default function MagicLink() {
     e.preventDefault();
     
     if (!email) {
-      toast.error('Veuillez entrer votre adresse email');
+      toast.error('Erreur', 'Veuillez entrer votre adresse email');
       return;
     }
 
@@ -31,10 +32,10 @@ export default function MagicLink() {
       if (error) throw error;
       
       setEmailSent(true);
-      toast.success('Lien de connexion envoyé avec succès !');
+      toast.success('Succès', 'Lien de connexion envoyé avec succès !');
     } catch (error: any) {
       console.error('Erreur lors de l\'envoi du lien magique:', error);
-      toast.error(error.message || 'Une erreur est survenue lors de l\'envoi du lien');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de l\'envoi du lien');
     } finally {
       setLoading(false);
     }

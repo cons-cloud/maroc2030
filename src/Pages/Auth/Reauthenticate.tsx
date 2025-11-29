@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { ROUTES } from '../../config/routes';
 
 export default function Reauthenticate() {
+  const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function Reauthenticate() {
     e.preventDefault();
     
     if (!password) {
-      toast.error('Veuillez entrer votre mot de passe');
+      toast.error('Erreur', 'Veuillez entrer votre mot de passe');
       return;
     }
 
@@ -39,11 +40,11 @@ export default function Reauthenticate() {
         // Rediriger vers la page précédente ou la page d'accueil
         navigate(-1 as any); // Retour à la page précédente
         
-        toast.success('Réauthentification réussie');
+        toast.success('Succès', 'Réauthentification réussie');
       }
     } catch (error: any) {
       console.error('Erreur lors de la réauthentification:', error);
-      toast.error('Mot de passe incorrect');
+      toast.error('Erreur', 'Mot de passe incorrect');
     } finally {
       setLoading(false);
     }

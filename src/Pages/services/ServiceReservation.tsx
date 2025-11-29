@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../config/routes';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { MESSAGES } from '../../constants/messages';
 import { Calendar, Mail, Phone, ArrowLeft, CheckCircle, User } from 'lucide-react';
 import { formatDualCurrency } from '../../utils/currency';
@@ -43,6 +43,7 @@ interface FormData {
 }
 
 const ServiceReservation: React.FC = () => {
+  const { toast } = useToast();
   const { type, id } = useParams<{ type: string; id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ const ServiceReservation: React.FC = () => {
 
   const fetchService = useCallback(async (): Promise<void> => {
     if (!id || !type) {
-      toast.error(MESSAGES.ERROR.NOT_FOUND);
+      toast.error('Erreur', MESSAGES.ERROR.NOT_FOUND);
       navigate(ROUTES.HOME);
       return;
     }
@@ -116,7 +117,7 @@ const ServiceReservation: React.FC = () => {
       }
     } catch (error) {
       console.error('Erreur lors du chargement du service:', error);
-      toast.error(MESSAGES.ERROR.DEFAULT);
+      toast.error('Erreur', MESSAGES.ERROR.DEFAULT);
       navigate(-1);
     } finally {
       setIsLoading(false);
@@ -158,10 +159,7 @@ const ServiceReservation: React.FC = () => {
           type: type
         };
         setService(updatedService);
-        toast.success('Les informations du service ont été mises à jour', {
-          duration: 3000,
-          position: 'top-center'
-        });
+        toast.success('Succès', 'Les informations du service ont été mises à jour');
       }
     },
     enabled: !!id && !!type
@@ -185,10 +183,7 @@ const ServiceReservation: React.FC = () => {
         }));
         
         // Afficher une notification à l'utilisateur
-        toast.success(MESSAGES.BOOKING.RESTORED, {
-          duration: 5000,
-          position: 'top-center'
-        });
+        toast.success('Succès', MESSAGES.BOOKING.RESTORED);
       }
     };
 
@@ -234,12 +229,12 @@ const ServiceReservation: React.FC = () => {
     
     // Vérifier les champs obligatoires
     if (!formData.startDate || !formData.endDate) {
-      toast.error(MESSAGES.BOOKING.INVALID_DATES);
+      toast.error('Erreur', MESSAGES.BOOKING.INVALID_DATES);
       return;
     }
 
     if (!formData.fullName || !formData.email || !formData.phone) {
-      toast.error(MESSAGES.ERROR.REQUIRED_FIELDS);
+      toast.error('Erreur', MESSAGES.ERROR.REQUIRED_FIELDS);
       return;
     }
 
@@ -248,7 +243,7 @@ const ServiceReservation: React.FC = () => {
     const endDate = new Date(formData.endDate);
     
     if (endDate <= startDate) {
-      toast.error('La date de fin doit être postérieure à la date de début');
+      toast.error('Erreur', 'La date de fin doit être postérieure à la date de début');
       return;
     }
 
@@ -300,7 +295,7 @@ const ServiceReservation: React.FC = () => {
       
       // Vérifier si les dates sont valides
       if (!formData.startDate || !formData.endDate) {
-        toast.error('Veuillez sélectionner des dates de séjour valides');
+        toast.error('Erreur', 'Veuillez sélectionner des dates de séjour valides');
         return;
       }
       
@@ -309,7 +304,7 @@ const ServiceReservation: React.FC = () => {
       const endDate = new Date(formData.endDate);
       
       if (endDate <= startDate) {
-        toast.error('La date de fin doit être postérieure à la date de début');
+        toast.error('Erreur', 'La date de fin doit être postérieure à la date de début');
         return;
       }
       
@@ -355,7 +350,7 @@ const ServiceReservation: React.FC = () => {
       
     } catch (error) {
       console.error('Erreur lors de la réservation:', error);
-      toast.error('Une erreur est survenue lors de la réservation');
+      toast.error('Erreur', 'Une erreur est survenue lors de la réservation');
     } finally {
       setIsLoading(false);
     }

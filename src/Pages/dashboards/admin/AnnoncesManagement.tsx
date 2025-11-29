@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Megaphone, Plus, Edit, Trash2, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import AnnonceForm from '../../../components/forms/AnnonceForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const AnnoncesManagement: React.FC = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +29,7 @@ const AnnoncesManagement: React.FC = () => {
       setItems(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des annonces');
     } finally {
       setLoading(false);
     }
@@ -54,12 +55,12 @@ const AnnoncesManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('annonces').delete().eq('id', annonceToDelete.id);
       if (error) throw error;
-      toast.success('Annonce supprimée');
+      toast.success('Succès', 'L\'annonce a été supprimée avec succès');
       setShowConfirm(false);
       setAnnonceToDelete(null);
       loadItems();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de l\'annonce');
     }
   };
 

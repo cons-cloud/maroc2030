@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { Loader2, AlertCircle, Calendar } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Link } from 'react-router-dom';
 
 // Interface pour les réservations
@@ -25,6 +25,7 @@ interface Booking {
 }
 
 const ClientBookings = () => {
+  const { toast } = useToast();
   const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,7 +132,7 @@ const ClientBookings = () => {
     } catch (err) {
       console.error('Erreur lors du chargement des réservations:', err);
       setError('Impossible de charger les réservations. Veuillez réessayer.');
-      toast.error('Erreur lors du chargement des réservations');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement de vos réservations');
     } finally {
       setLoading(false);
     }
@@ -192,10 +193,10 @@ const ClientBookings = () => {
         } : booking
       ));
       
-      toast.success('Réservation annulée avec succès');
+      toast.success('Réservation annulée', 'Votre réservation a été annulée avec succès');
     } catch (err) {
       console.error('Erreur lors de l\'annulation de la réservation:', err);
-      toast.error('Une erreur est survenue lors de l\'annulation');
+      toast.error('Erreur', 'Une erreur est survenue lors de l\'annulation de la réservation');
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { uploadMultipleImages, deleteImage } from '../../lib/storage';
 import { X, Upload, Trash2, Loader } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '../ui/use-toast';
 
 interface AppartementFormProps {
   appartement?: any;
@@ -11,6 +11,7 @@ interface AppartementFormProps {
 }
 
 const AppartementForm: React.FC<AppartementFormProps> = ({ appartement, onClose, onSuccess }) => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [formData, setFormData] = useState({
@@ -42,9 +43,9 @@ const AppartementForm: React.FC<AppartementFormProps> = ({ appartement, onClose,
     try {
       const uploadedUrls = await uploadMultipleImages(Array.from(files), 'appartements');
       setImages([...images, ...uploadedUrls]);
-      toast.success(`${uploadedUrls.length} photo(s) ajoutée(s)`);
+      toast.success('Succès', `${uploadedUrls.length} photo(s) ajoutée(s) avec succès`);
     } catch (error) {
-      toast.error('Erreur lors du téléchargement des images');
+      toast.error('Erreur', 'Une erreur est survenue lors du téléchargement des images');
     } finally {
       setUploadingImages(false);
     }
@@ -54,9 +55,9 @@ const AppartementForm: React.FC<AppartementFormProps> = ({ appartement, onClose,
     try {
       await deleteImage(imageUrl);
       setImages(images.filter((_, i) => i !== index));
-      toast.success('Photo supprimée');
+      toast.success('Succès', 'La photo a été supprimée avec succès');
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de la photo');
     }
   };
 
@@ -81,19 +82,19 @@ const AppartementForm: React.FC<AppartementFormProps> = ({ appartement, onClose,
           .update(dataToSave)
           .eq('id', appartement.id);
         if (error) throw error;
-        toast.success('Appartement modifié avec succès');
+        toast.success('Succès', 'Les modifications ont été enregistrées avec succès');
       } else {
         const { error } = await supabase
           .from('appartements')
           .insert([dataToSave]);
         if (error) throw error;
-        toast.success('Appartement créé avec succès');
+        toast.success('Succès', 'L\'appartement a été créé avec succès');
       }
 
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de l\'enregistrement');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de l\'enregistrement');
     } finally {
       setLoading(false);
     }

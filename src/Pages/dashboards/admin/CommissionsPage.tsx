@@ -3,7 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Download, Filter, X, DollarSign } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Commission {
   payment_id: string;
@@ -21,6 +21,7 @@ interface Commission {
 }
 
 export const CommissionsPage: React.FC = () => {
+  const { toast } = useToast();
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -58,7 +59,7 @@ export const CommissionsPage: React.FC = () => {
       setCommissions(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des commissions:', error);
-      toast.error('Erreur lors du chargement des commissions');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des commissions');
     } finally {
       setLoading(false);
     }
@@ -76,11 +77,11 @@ export const CommissionsPage: React.FC = () => {
 
       if (error) throw error;
       
-      toast.success(`Commission marquée comme ${!currentStatus ? 'payée' : 'non payée'}`);
+      toast.success('Succès', `La commission a été marquée comme ${!currentStatus ? 'payée' : 'non payée'}`);
       loadCommissions();
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
-      toast.error('Erreur lors de la mise à jour du statut');
+      toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour du statut');
     }
   };
 

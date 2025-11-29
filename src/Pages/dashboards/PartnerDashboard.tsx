@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import ProductForm from '../../components/forms/ProductForm';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Package, Home, Building2, Car, Palmtree, Plus } from 'lucide-react';
 import type { Service, ServiceType } from '../../types/supabase';
 
@@ -45,6 +45,7 @@ type Product = Omit<Service, 'type'> & {
 
 const PartnerDashboard: React.FC = () => {
   const { user, profile } = useAuth();
+  const { toast } = useToast();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<PartnerStats | null>(null);
@@ -102,7 +103,7 @@ const PartnerDashboard: React.FC = () => {
       // setBookings(bookingsData || []);
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
-      toast.error('Erreur lors du chargement des données');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des données');
     } finally {
       setLoading(false);
     }
@@ -147,11 +148,11 @@ const PartnerDashboard: React.FC = () => {
       
       if (error) throw error;
       
-      toast.success('Produit supprimé avec succès');
+      toast.success('Succès', 'Le produit a été supprimé avec succès');
       loadDashboardData();
     } catch (error) {
       console.error('Erreur lors de la suppression du produit:', error);
-      toast.error('Erreur lors de la suppression du produit');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du produit');
     }
   };
 
@@ -164,11 +165,11 @@ const PartnerDashboard: React.FC = () => {
       
       if (error) throw error;
       
-      toast.success(`Produit ${!currentStatus ? 'activé' : 'désactivé'}`);
+      toast.success('Succès', `Le produit a été ${!currentStatus ? 'activé' : 'désactivé'}`);
       loadDashboardData();
     } catch (error) {
       console.error('Erreur lors de la mise à jour du produit:', error);
-      toast.error('Erreur lors de la mise à jour du produit');
+      toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour du produit');
     }
   };
 

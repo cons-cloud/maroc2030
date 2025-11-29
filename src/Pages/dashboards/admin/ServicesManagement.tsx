@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import useRealtimeSubscription from '../../../hooks/useRealtimeSubscription';
 
 interface Service {
@@ -24,6 +24,7 @@ interface Service {
 }
 
 const ServicesManagement: React.FC = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,12 +46,11 @@ const ServicesManagement: React.FC = () => {
     event: '*',
     callback: async (payload) => {
       console.log('Mise à jour du service détectée:', payload);
-      const loadingToast = toast.loading('Mise à jour des services...');
       try {
         await loadServices();
-        toast.success('Services mis à jour avec succès', { id: loadingToast });
+        toast.success('Succès', 'Les services ont été mis à jour avec succès');
       } catch (error) {
-        toast.error('Erreur lors de la mise à jour', { id: loadingToast });
+        toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour des services');
       }
     },
   });
@@ -79,7 +79,7 @@ const ServicesManagement: React.FC = () => {
       setServices(data || []);
     } catch (error) {
       console.error('Error loading services:', error);
-      toast.error('Erreur lors du chargement des services');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des services');
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ const ServicesManagement: React.FC = () => {
       setCategories(data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
-      toast.error('Erreur lors du chargement des catégories');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des catégories');
     } finally {
       setLoading(false);
     }
@@ -114,11 +114,11 @@ const ServicesManagement: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success('Service supprimé avec succès');
+      toast.success('Succès', 'Le service a été supprimé avec succès');
       loadServices();
     } catch (error) {
       console.error('Error deleting service:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du service');
     }
   };
 
@@ -131,7 +131,7 @@ const ServicesManagement: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success(`Service ${!currentStatus ? 'activé' : 'désactivé'}`);
+      toast.success('Succès', `Le service a été ${!currentStatus ? 'activé' : 'désactivé'} avec succès`);
       loadServices();
     } catch (error) {
       console.error('Error updating service:', error);
@@ -148,7 +148,7 @@ const ServicesManagement: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success(`Service ${!currentStatus ? 'mis en avant' : 'retiré de la mise en avant'}`);
+      toast.success('Succès', `Le service a été ${!currentStatus ? 'mis en avant' : 'retiré de la mise en avant'}`);
       loadServices();
     } catch (error) {
       console.error('Error updating service:', error);

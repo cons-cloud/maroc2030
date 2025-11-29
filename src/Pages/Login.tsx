@@ -5,11 +5,12 @@ import { supabase } from '../lib/supabase';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { MESSAGES } from '../constants/messages';
 import { ROUTES } from '../config/routes';
 
 export default function Login() {
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -139,7 +140,7 @@ export default function Login() {
           console.log('Réservation expirée');
           // Supprimer la réservation expirée
           sessionStorage.removeItem('pendingReservation');
-          toast.info('Votre session de réservation a expiré. Veuillez recommencer.');
+          toast.success('Information', 'Votre session de réservation a expiré. Veuillez recommencer.');
         }
       } catch (error) {
         console.error('Erreur lors du traitement de la réservation:', error);
@@ -194,10 +195,10 @@ export default function Login() {
                     email,
                   });
                   if (error) throw error;
-                  toast.success('Un nouveau lien de confirmation a été envoyé à votre adresse email');
+                  toast.success('Succès', 'Un nouveau lien de confirmation a été envoyé à votre adresse email');
                 } catch (err) {
                   console.error('Erreur lors de l\'envoi du lien de confirmation:', err);
-                  toast.error('Erreur lors de l\'envoi du lien de confirmation');
+                  toast.error('Erreur', 'Erreur lors de l\'envoi du lien de confirmation');
                 }
               }}
               className="ml-1 text-emerald-600 hover:underline"

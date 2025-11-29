@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Search, Trash2, UserCheck, UserX, Loader2, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import usePagination from '../../../hooks/usePagination';
 import debounce from 'lodash/debounce';
 
@@ -46,6 +46,7 @@ const getRoleBadge = (role: string) => {
 };
 
 const UsersManagement: React.FC = () => {
+  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -92,7 +93,7 @@ const UsersManagement: React.FC = () => {
     console.error(defaultMessage, error);
     const errorMessage = error?.message || defaultMessage;
     setError(errorMessage);
-    toast.error(errorMessage);
+    toast.error('Erreur', errorMessage);
   };
 
   // Charger les utilisateurs avec les filtres actuels (avec debounce)
@@ -148,7 +149,7 @@ const UsersManagement: React.FC = () => {
 
         if (error) throw error;
 
-        toast.success('Rôle mis à jour avec succès');
+        toast.success('Succès', 'Le rôle a été mis à jour avec succès');
         loadUsers();
 
       } catch (error: any) {
@@ -173,7 +174,7 @@ const UsersManagement: React.FC = () => {
 
         if (error) throw error;
 
-        toast.success(`Utilisateur marqué comme ${!currentStatus ? 'vérifié' : 'non vérifié'}`);
+        toast.success('Succès', `L'utilisateur a été marqué comme ${!currentStatus ? 'vérifié' : 'non vérifié'}`);
         loadUsers();
 
       } catch (error: any) {
@@ -210,7 +211,7 @@ const UsersManagement: React.FC = () => {
           console.warn('Impossible de supprimer l\'utilisateur de l\'authentification:', authError);
         }
 
-        toast.success('Utilisateur supprimé avec succès');
+        toast.success('Succès', 'L\'utilisateur a été supprimé avec succès');
         loadUsers();
 
       } catch (error: any) {

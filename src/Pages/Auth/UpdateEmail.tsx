@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { ROUTES } from '../../config/routes';
 
 export default function UpdateEmail() {
+  const { toast } = useToast();
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,12 +31,12 @@ export default function UpdateEmail() {
     e.preventDefault();
     
     if (!newEmail || !password) {
-      toast.error('Veuillez remplir tous les champs');
+      toast.error('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
 
     if (newEmail === currentEmail) {
-      toast.error('Veuvez entrer une nouvelle adresse email différente de l\'actuelle');
+      toast.error('Erreur', 'Veuvez entrer une nouvelle adresse email différente de l\'actuelle');
       return;
     }
 
@@ -64,6 +65,7 @@ export default function UpdateEmail() {
       await supabase.auth.signOut();
       
       toast.success(
+        'Succès',
         'Un email de confirmation a été envoyé à votre nouvelle adresse. ' +
         'Veuvez confirmer votre nouvelle adresse email avant de vous reconnecter.'
       );
@@ -71,7 +73,7 @@ export default function UpdateEmail() {
       navigate(ROUTES.LOGIN);
     } catch (error: any) {
       console.error('Erreur lors du changement d\'email:', error);
-      toast.error(error.message || 'Une erreur est survenue lors du changement d\'email');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors du changement d\'email');
     } finally {
       setLoading(false);
     }

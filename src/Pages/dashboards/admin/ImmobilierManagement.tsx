@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Building2, Plus, Edit, Trash2, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '../../../components/DashboardLayout';
 import ImmobilierForm from '../../../components/forms/ImmobilierForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const ImmobilierManagement: React.FC = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +30,7 @@ const ImmobilierManagement: React.FC = () => {
       setItems(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des biens immobiliers');
     } finally {
       setLoading(false);
     }
@@ -55,12 +56,12 @@ const ImmobilierManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('immobilier').delete().eq('id', itemToDelete.id);
       if (error) throw error;
-      toast.success('Bien immobilier supprimé');
+      toast.success('Succès', 'Le bien immobilier a été supprimé avec succès');
       setShowConfirm(false);
       setItemToDelete(null);
       loadItems();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du bien immobilier');
     }
   };
 

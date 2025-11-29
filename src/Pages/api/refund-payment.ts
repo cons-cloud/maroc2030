@@ -1,5 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextApiRequest, NextApiResponse } from 'next';
+type ApiRequest = {
+  method?: string;
+  body: any;
+};
+
+type ApiResponse = {
+  status: (code: number) => ApiResponse;
+  json: (data: any) => void;
+  send: (data: any) => void;
+  end: () => void;
+  setHeader: (name: string, value: string) => void;
+};
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -11,7 +22,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

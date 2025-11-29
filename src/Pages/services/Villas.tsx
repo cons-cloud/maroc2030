@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ServiceHero from "../../components/ServiceHero";
 import ServiceCard from '../../components/ServiceCard';
 import { supabase } from '../../lib/supabase';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import LoadingState from '../../components/LoadingState';
 
 interface Villa {
@@ -24,6 +24,7 @@ interface Villa {
 }
 
 const Villas = () => {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [villas, setVillas] = useState<Villa[]>([]);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
@@ -132,7 +133,7 @@ const Villas = () => {
         setVillas(allVillas);
       } catch (error) {
         console.error('Erreur lors du chargement des villas:', error);
-        toast.error('Erreur lors du chargement des villas');
+        toast.error('Erreur', 'Une erreur est survenue lors du chargement des villas');
       } finally {
         setIsLoading(false);
       }

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import { format } from 'date-fns';
@@ -107,17 +107,11 @@ export async function generateSitemap() {
       }
     });
 
-    // Ajouter les URLs alternatives
+    // Ajouter les URLs alternatives (version simplifiée sans liens alternatifs)
     alternateUrls.forEach(altUrl => {
       if (altUrl !== baseUrl) {
         allUrls.unshift({
           url: altUrl,
-          links: alternateUrls
-            .filter(url => url !== altUrl)
-            .map(url => ({
-              lang: 'fr',
-              url: url
-            })),
           changefreq: 'daily',
           priority: 1.0
         });

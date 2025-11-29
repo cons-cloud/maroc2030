@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { UserCheck, Plus, Edit, Trash2, Star } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '../../../components/DashboardLayout';
 import GuideForm from '../../../components/forms/GuideForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const GuidesTouristiquesManagement: React.FC = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +30,7 @@ const GuidesTouristiquesManagement: React.FC = () => {
       setItems(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des guides touristiques');
     } finally {
       setLoading(false);
     }
@@ -55,12 +56,12 @@ const GuidesTouristiquesManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('guides_touristiques').delete().eq('id', guideToDelete.id);
       if (error) throw error;
-      toast.success('Guide supprimé');
+      toast.success('Succès', 'Le guide a été supprimé avec succès');
       setShowConfirm(false);
       setGuideToDelete(null);
       loadItems();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du guide');
     }
   };
 

@@ -4,7 +4,7 @@ import SearchBar from '../../components/SearchBar';
 import ServiceHero from '../../components/ServiceHero';
 import ServiceCard from '@/components/ServiceCard';
 import { supabase } from '../../lib/supabase';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface Voyage {
@@ -63,6 +63,7 @@ const ImageSlider = ({ images }: { images: string[] }) => {
 };
 
 const Tourisme = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
@@ -160,7 +161,7 @@ const Tourisme = () => {
       setVilles(Object.values(villesMap));
     } catch (error: any) {
       console.error('Erreur lors du chargement des circuits:', error);
-      toast.error('Erreur lors du chargement des circuits');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des circuits');
     } finally {
       setIsLoading(false);
     }

@@ -6,7 +6,7 @@ import Footer from '../../components/Footer';
 import AuthGuard from '../../components/AuthGuard';
 import UniversalBookingForm from '../../components/UniversalBookingForm';
 import { MapPin, Star, Languages, Clock, Phone, Mail } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Guide {
   id: string;
@@ -26,6 +26,7 @@ interface Guide {
 }
 
 const Guides = () => {
+  const { toast } = useToast();
   const [guides, setGuides] = useState<Guide[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
@@ -50,7 +51,7 @@ const Guides = () => {
       setGuides(data || []);
     } catch (error) {
       console.error('Error loading guides:', error);
-      toast.error('Erreur lors du chargement des guides');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des guides');
     } finally {
       setIsLoading(false);
     }

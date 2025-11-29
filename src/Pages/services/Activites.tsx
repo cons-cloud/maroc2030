@@ -6,7 +6,7 @@ import Footer from '../../components/Footer';
 import AuthGuard from '../../components/AuthGuard';
 import UniversalBookingForm from '../../components/UniversalBookingForm';
 import { MapPin, Clock, Users, Calendar, Tag } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Activite {
   id: string;
@@ -25,6 +25,7 @@ interface Activite {
 }
 
 const Activites = () => {
+  const { toast } = useToast();
   const [activites, setActivites] = useState<Activite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedActivite, setSelectedActivite] = useState<Activite | null>(null);
@@ -49,7 +50,7 @@ const Activites = () => {
       setActivites(data || []);
     } catch (error) {
       console.error('Error loading activites:', error);
-      toast.error('Erreur lors du chargement des activités');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des activités');
     } finally {
       setIsLoading(false);
     }

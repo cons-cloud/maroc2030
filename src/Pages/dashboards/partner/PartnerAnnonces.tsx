@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Megaphone,
   Plus,
@@ -31,6 +31,7 @@ interface Annonce {
 }
 
 const PartnerAnnonces = () => {
+  const { toast } = useToast();
   const { user } = useAuth();
   const [annonces, setAnnonces] = useState<Annonce[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +78,7 @@ const PartnerAnnonces = () => {
       setAnnonces(data || []);
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors du chargement des annonces');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des annonces');
     } finally {
       setLoading(false);
     }
@@ -101,14 +102,14 @@ const PartnerAnnonces = () => {
           .eq('id', selectedAnnonce.id);
 
         if (error) throw error;
-        toast.success('Annonce modifiée avec succès');
+        toast.success('Succès', 'L\'annonce a été modifiée avec succès');
       } else {
         const { error } = await supabase
           .from('annonces')
           .insert([annonceData]);
 
         if (error) throw error;
-        toast.success('Annonce créée avec succès');
+        toast.success('Succès', 'L\'annonce a été créée avec succès');
       }
 
       setShowForm(false);
@@ -117,7 +118,7 @@ const PartnerAnnonces = () => {
       loadAnnonces();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error('Erreur', 'Une erreur est survenue lors de la sauvegarde de l\'annonce');
     }
   };
 
@@ -147,11 +148,11 @@ const PartnerAnnonces = () => {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success('Annonce supprimée');
+      toast.success('Succès', 'L\'annonce a été supprimée avec succès');
       loadAnnonces();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de l\'annonce');
     }
   };
 
@@ -163,11 +164,11 @@ const PartnerAnnonces = () => {
         .eq('id', annonce.id);
 
       if (error) throw error;
-      toast.success(annonce.available ? 'Annonce désactivée' : 'Annonce activée');
+      toast.success('Succès', annonce.available ? 'L\'annonce a été désactivée' : 'L\'annonce a été activée');
       loadAnnonces();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la modification');
+      toast.error('Erreur', 'Une erreur est survenue lors de la modification de l\'annonce');
     }
   };
 

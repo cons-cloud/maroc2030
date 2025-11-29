@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { uploadMultipleImages, deleteImage } from '../../../lib/storage';
 import { ArrowLeft, Upload, X, Save, Loader } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '../../../components/DashboardLayout';
 
 interface ServiceFormData {
@@ -28,6 +28,7 @@ interface ServiceFormData {
 }
 
 const ServiceForm: React.FC = () => {
+  const { toast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!id;
@@ -95,7 +96,7 @@ const ServiceForm: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading service:', error);
-      toast.error('Erreur lors du chargement du service');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement du service');
     } finally {
       setLoading(false);
     }
@@ -115,10 +116,10 @@ const ServiceForm: React.FC = () => {
         images: [...prev.images, ...urls],
       }));
 
-      toast.success(`${urls.length} image(s) ajoutée(s)`);
+      toast.success('Succès', `${urls.length} image(s) ajoutée(s)`);
     } catch (error) {
       console.error('Error uploading images:', error);
-      toast.error('Erreur lors de l\'upload des images');
+      toast.error('Erreur', 'Une erreur est survenue lors de l\'upload des images');
     } finally {
       setUploading(false);
     }
@@ -131,10 +132,10 @@ const ServiceForm: React.FC = () => {
         ...prev,
         images: prev.images.filter(img => img !== url),
       }));
-      toast.success('Image supprimée');
+      toast.success('Succès', 'L\'image a été supprimée avec succès');
     } catch (error) {
       console.error('Error removing image:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de l\'image');
     }
   };
 
@@ -142,7 +143,7 @@ const ServiceForm: React.FC = () => {
     e.preventDefault();
 
     if (!formData.title || !formData.category_id || !formData.price) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
 
@@ -167,20 +168,20 @@ const ServiceForm: React.FC = () => {
           .eq('id', id);
 
         if (error) throw error;
-        toast.success('Service modifié avec succès');
+        toast.success('Succès', 'Le service a été modifié avec succès');
       } else {
         const { error } = await supabase
           .from('services')
           .insert([serviceData]);
 
         if (error) throw error;
-        toast.success('Service créé avec succès');
+        toast.success('Succès', 'Le service a été créé avec succès');
       }
 
       navigate('/dashboard/admin/services');
     } catch (error: any) {
       console.error('Error saving service:', error);
-      toast.error(error.message || 'Erreur lors de l\'enregistrement');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de l\'enregistrement');
     } finally {
       setLoading(false);
     }

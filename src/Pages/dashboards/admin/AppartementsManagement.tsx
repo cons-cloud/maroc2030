@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Building, Plus, Edit, Trash2, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import AppartementForm from '../../../components/forms/AppartementForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const AppartementsManagement: React.FC = () => {
+  const { toast } = useToast();
   const [appartements, setAppartements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +29,7 @@ const AppartementsManagement: React.FC = () => {
       setAppartements(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des appartements');
     } finally {
       setLoading(false);
     }
@@ -54,12 +55,12 @@ const AppartementsManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('appartements').delete().eq('id', appartementToDelete.id);
       if (error) throw error;
-      toast.success('Appartement supprimé');
+      toast.success('Succès', 'L\'appartement a été supprimé avec succès');
       setShowConfirm(false);
       setAppartementToDelete(null);
       loadAppartements();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de l\'appartement');
     }
   };
 

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { Lock, Bell, Globe, Trash2, Save, Loader, Eye, EyeOff } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 const PartnerSettings = () => {
+  const { toast } = useToast();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -38,12 +39,12 @@ const PartnerSettings = () => {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error('Erreur', 'Les mots de passe ne correspondent pas');
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+      toast.error('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
@@ -56,7 +57,7 @@ const PartnerSettings = () => {
 
       if (error) throw error;
 
-      toast.success('Mot de passe modifié avec succès !');
+      toast.success('Succès', 'Mot de passe modifié avec succès !');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -64,7 +65,7 @@ const PartnerSettings = () => {
       });
     } catch (error: any) {
       console.error('Error updating password:', error);
-      toast.error(error.message || 'Erreur lors de la modification du mot de passe');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de la modification du mot de passe');
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ const PartnerSettings = () => {
       ...notifications,
       [key]: !notifications[key],
     });
-    toast.success('Préférences de notification mises à jour');
+    toast.success('Succès', 'Vos préférences de notification ont été mises à jour');
   };
 
   const handlePreferenceChange = (key: keyof typeof preferences, value: string) => {
@@ -111,11 +112,11 @@ const PartnerSettings = () => {
 
       // Déconnexion
       await supabase.auth.signOut();
-      toast.success('Compte supprimé avec succès');
+      toast.success('Succès', 'Votre compte a été supprimé avec succès');
       navigate('/');
     } catch (error: any) {
       console.error('Error deleting account:', error);
-      toast.error('Erreur lors de la suppression du compte');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression du compte');
     } finally {
       setLoading(false);
     }

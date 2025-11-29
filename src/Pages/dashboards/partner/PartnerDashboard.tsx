@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useRealtimeSubscription } from '../../../hooks/useRealtimeSubscription';
+import useRealtimeSubscription from '../../../hooks/useRealtimeSubscription';
 import { DollarSign, TrendingUp, Clock, CreditCard, CheckCircle, XCircle, AlertCircle, Plus, Package, ArrowRight } from 'lucide-react';
 import { Line, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';

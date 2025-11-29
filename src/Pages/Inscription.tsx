@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Loader2, Eye, EyeOff, Check, X } from 'lucide-react';
 import { validateEmail, validatePhoneMaroc as validatePhone } from '../utils/validation';
@@ -27,6 +27,7 @@ interface FormErrors {
 }
 
 const Inscription = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const [formData, setFormData] = useState<FormData>({
@@ -127,9 +128,7 @@ const Inscription = () => {
       );
       
       // Si on arrive ici, c'est que l'inscription et la connexion automatique ont réussi
-      toast.success('Inscription réussie ! Vous êtes maintenant connecté.', {
-        duration: 6000,
-      });
+      toast.success('Inscription réussie', 'Vous êtes maintenant connecté.');
       
       // Pour les nouvelles inscriptions standard, rediriger vers la page d'accueil
       // car le rôle sera toujours 'client' pour les nouveaux utilisateurs
@@ -148,7 +147,7 @@ const Inscription = () => {
         errorMessage = 'Le mot de passe ne respecte pas les exigences de sécurité';
       }
       
-      toast.error(errorMessage);
+      toast.error('Erreur', errorMessage);
     } finally {
       setIsSubmitting(false);
     }

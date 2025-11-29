@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { ROUTES } from '../../config/routes';
 
 export default function ResetPassword() {
+  const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,12 +24,12 @@ export default function ResetPassword() {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error('Erreur', 'Les mots de passe ne correspondent pas');
       return;
     }
 
     if (password.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caractères');
+      toast.error('Erreur', 'Le mot de passe doit contenir au moins 8 caractères');
       return;
     }
 
@@ -41,13 +42,13 @@ export default function ResetPassword() {
 
       if (error) throw error;
 
-      toast.success('Votre mot de passe a été réinitialisé avec succès');
+      toast.success('Succès', 'Votre mot de passe a été réinitialisé avec succès');
       navigate(ROUTES.LOGIN, {
         state: { message: 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.' }
       });
     } catch (error: any) {
       console.error('Erreur lors de la réinitialisation du mot de passe:', error);
-      toast.error(error.message || 'Une erreur est survenue lors de la réinitialisation du mot de passe');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de la réinitialisation du mot de passe');
     } finally {
       setLoading(false);
     }

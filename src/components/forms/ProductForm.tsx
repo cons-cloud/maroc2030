@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import toast from 'react-hot-toast';
+import { useToast } from '../ui/use-toast';
 import {
   X,
   Upload,
@@ -23,6 +23,7 @@ interface ProductFormProps {
 
 const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSuccess }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   
@@ -83,13 +84,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSuccess }
 
     // Vérifier le type de fichier
     if (!file.type.startsWith('image/')) {
-      toast.error('Veuillez sélectionner une image');
+      toast.error('Erreur', 'Veuillez sélectionner une image valide (format JPG, PNG ou WebP)');
       return;
     }
 
     // Vérifier la taille (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('L\'image ne doit pas dépasser 5MB');
+      toast.error('Erreur', 'La taille de l\'image ne doit pas dépasser 5 Mo');
       return;
     }
 
@@ -114,17 +115,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSuccess }
 
       if (isMain) {
         setFormData(prev => ({ ...prev, main_image: publicUrl }));
-        toast.success('Image principale ajoutée');
+        toast.success('Succès', 'L\'image principale a été ajoutée avec succès');
       } else {
         setFormData(prev => ({
           ...prev,
           images: [...prev.images, publicUrl]
         }));
-        toast.success('Image ajoutée à la galerie');
+        toast.success('Succès', 'L\'image a été ajoutée à la galerie avec succès');
       }
     } catch (error: any) {
       console.error('Erreur upload:', error);
-      toast.error('Erreur lors de l\'upload de l\'image');
+      toast.error('Erreur', 'Une erreur est survenue lors du téléchargement de l\'image');
     } finally {
       setUploadingImage(false);
     }
@@ -142,12 +143,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSuccess }
 
     // Validation
     if (!formData.title || !formData.price || !formData.city) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error('Champs manquants', 'Veuillez remplir tous les champs obligatoires marqués d\'un astérisque (*)');
       return;
     }
 
     if (!formData.main_image) {
-      toast.error('Veuillez ajouter au moins une image principale');
+      toast.error('Image manquante', 'Veuillez ajouter au moins une image principale pour ce produit');
       return;
     }
 
@@ -179,7 +180,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSuccess }
           .eq('id', product.id);
 
         if (error) throw error;
-        toast.success('Produit mis à jour avec succès');
+        toast.success('Succès', 'Les modifications ont été enregistrées avec succès');
       } else {
         // Création
         const { error } = await supabase
@@ -187,14 +188,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSuccess }
           .insert([productData]);
 
         if (error) throw error;
-        toast.success('Produit créé avec succès');
+        toast.success('Succès', 'Le produit a été créé avec succès');
       }
 
       onSuccess();
       onClose();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error(error.message || 'Erreur lors de l\'enregistrement');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { Mail, Phone, MapPin, Building, FileText, Save, Loader, Camera } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 const PartnerProfile = () => {
+  const { toast } = useToast();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -53,10 +54,10 @@ const PartnerProfile = () => {
 
       if (error) throw error;
 
-      toast.success('Profil mis à jour avec succès !');
+      toast.success('Succès', 'Profil mis à jour avec succès !');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Erreur lors de la mise à jour du profil');
+      toast.error('Erreur', 'Une erreur est survenue lors de la mise à jour du profil');
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,7 @@ import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { useToast } from './ui/use-toast';
 import { X, Calendar, Users, MapPin, Clock, CreditCard, User, Mail, Phone } from 'lucide-react';
 import AuthGuard from './AuthGuard';
 
@@ -28,6 +28,7 @@ interface UniversalBookingFormProps {
 }
 
 const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType, service, onClose }) => {
+  const { toast } = useToast();
   const stripe = useStripe();
   const elements = useElements();
   const { user, profile } = useAuth();
@@ -130,7 +131,7 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
   // Validation
   const validateForm = () => {
     if (!formData.fullName || !formData.email || !formData.phone) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return false;
     }
 
@@ -139,49 +140,49 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
       case 'hotel':
       case 'villa':
         if (!formData.checkInDate || !formData.checkOutDate) {
-          toast.error('Veuillez sélectionner les dates d\'arrivée et de départ');
+          toast.error('Erreur', 'Veuillez sélectionner les dates d\'arrivée et de départ');
           return false;
         }
         if (calculateNights() < 1) {
-          toast.error('La durée du séjour doit être au moins 1 nuit');
+          toast.error('Erreur', 'La durée du séjour doit être au moins 1 nuit');
           return false;
         }
         if (formData.numberOfGuests < 1) {
-          toast.error('Le nombre d\'invités doit être au moins 1');
+          toast.error('Erreur', 'Le nombre d\'invités doit être au moins 1');
           return false;
         }
         if (service.max_guests && formData.numberOfGuests > service.max_guests) {
-          toast.error(`Le nombre maximum d'invités est ${service.max_guests}`);
+          toast.error('Erreur', `Le nombre maximum d'invités est ${service.max_guests}`);
           return false;
         }
         break;
 
       case 'voiture':
         if (!formData.pickupDate || !formData.returnDate) {
-          toast.error('Veuillez sélectionner les dates de prise en charge et de retour');
+          toast.error('Erreur', 'Veuillez sélectionner les dates de prise en charge et de retour');
           return false;
         }
         if (!formData.pickupLocation || !formData.dropoffLocation) {
-          toast.error('Veuillez indiquer les lieux de prise en charge et de retour');
+          toast.error('Erreur', 'Veuillez indiquer les lieux de prise en charge et de retour');
           return false;
         }
         if (calculateDays() < 1) {
-          toast.error('La durée de location doit être au moins 1 jour');
+          toast.error('Erreur', 'La durée de location doit être au moins 1 jour');
           return false;
         }
         break;
 
       case 'circuit':
         if (!formData.startDate) {
-          toast.error('Veuillez sélectionner la date de départ');
+          toast.error('Erreur', 'Veuillez sélectionner la date de départ');
           return false;
         }
         if (formData.numberOfPeople < 1) {
-          toast.error('Le nombre de personnes doit être au moins 1');
+          toast.error('Erreur', 'Le nombre de personnes doit être au moins 1');
           return false;
         }
         if (service.max_participants && formData.numberOfPeople > service.max_participants) {
-          toast.error(`Le nombre maximum de participants est ${service.max_participants}`);
+          toast.error('Erreur', `Le nombre maximum de participants est ${service.max_participants}`);
           return false;
         }
         break;
@@ -196,7 +197,7 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
 
     if (!validateForm()) return;
     if (!stripe || !elements) {
-      toast.error('Stripe n\'est pas chargé');
+      toast.error('Erreur', 'Le service de paiement n\'est pas disponible pour le moment');
       return;
     }
 
@@ -205,7 +206,7 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
     try {
       // Vérification de sécurité
       if (!user?.id) {
-        toast.error('Session expirée. Veuillez vous reconnecter.');
+        toast.error('Session expirée', 'Veuillez vous reconnecter pour continuer');
         navigate('/login');
         return;
       }
@@ -319,11 +320,11 @@ const UniversalBookingForm: React.FC<UniversalBookingFormProps> = ({ serviceType
           });
 
         setStep(3);
-        toast.success('Réservation confirmée !');
+        toast.success('Succès', 'Votre réservation a été confirmée avec succès !');
       }
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error(error.message || 'Erreur lors du paiement');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors du traitement de votre paiement');
     } finally {
       setLoading(false);
     }

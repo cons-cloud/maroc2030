@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { ROUTES } from '../../config/routes';
 
 type Role = 'client' | 'partner' | 'admin';
@@ -13,6 +13,7 @@ const roleOptions = [
 ];
 
 export default function InviteUser() {
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('client');
   const [loading, setLoading] = useState(false);
@@ -22,7 +23,7 @@ export default function InviteUser() {
     e.preventDefault();
     
     if (!email) {
-      toast.error('Veuillez entrer une adresse email');
+      toast.error('Erreur', 'Veuillez entrer une adresse email');
       return;
     }
 
@@ -37,12 +38,12 @@ export default function InviteUser() {
 
       if (error) throw error;
       
-      toast.success(`Invitation envoyée à ${email}`);
+      toast.success('Succès', `Invitation envoyée à ${email}`);
       setEmail('');
       
     } catch (error: any) {
       console.error('Erreur lors de l\'envoi de l\'invitation:', error);
-      toast.error(error.message || 'Une erreur est survenue lors de l\'envoi de l\'invitation');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de l\'envoi de l\'invitation');
     } finally {
       setLoading(false);
     }

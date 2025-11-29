@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiMail, FiPhone, FiMapPin, FiSend, FiClock, FiMessageSquare } from 'react-icons/fi';
 import { supabase } from '../lib/supabase';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { useSiteContent } from '../contexts/SiteContentContext';
 
 const Contact = () => {
+  const { toast } = useToast();
   const { settings } = useSiteSettings();
   const { getContent } = useSiteContent();
   

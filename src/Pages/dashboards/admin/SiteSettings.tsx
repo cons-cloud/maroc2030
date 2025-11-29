@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Save, Palette, Mail, Phone, MapPin, Globe, Image as ImageIcon } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../../../components/ui/use-toast';
 import { useForm, Controller } from 'react-hook-form';
 import { ColorPicker } from '../../../components/ui/color-picker';
 
@@ -38,6 +38,7 @@ interface SiteSettings {
 }
 
 export const SiteSettings: React.FC = () => {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -73,7 +74,7 @@ export const SiteSettings: React.FC = () => {
       reset({ ...defaultSettings, ...data });
     } catch (error) {
       console.error('Error loading settings:', error);
-      toast.error('Erreur lors du chargement des paramètres');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des paramètres');
     } finally {
       setIsLoading(false);
     }
@@ -133,10 +134,10 @@ export const SiteSettings: React.FC = () => {
       document.documentElement.style.setProperty('--secondary', data.secondary_color);
       document.documentElement.style.setProperty('--accent', data.accent_color);
 
-      toast.success('Paramètres enregistrés avec succès');
+      toast.success('Succès', 'Les paramètres ont été enregistrés avec succès');
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error('Erreur lors de la sauvegarde des paramètres');
+      toast.error('Erreur', 'Une erreur est survenue lors de la sauvegarde des paramètres');
     } finally {
       setIsSaving(false);
     }

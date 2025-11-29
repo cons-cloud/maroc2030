@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../config/routes';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function ConfirmEmail() {
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -23,7 +24,7 @@ export default function ConfirmEmail() {
           
           if (error) throw error;
           
-          toast.success('Votre email a été confirmé avec succès !');
+          toast.success('Succès', 'Votre email a été confirmé avec succès !');
           
           // Rediriger vers la page de connexion après un court délai
           setTimeout(() => {
@@ -36,7 +37,7 @@ export default function ConfirmEmail() {
           
         } catch (error: any) {
           console.error('Erreur lors de la confirmation:', error);
-          toast.error(error.message || 'Une erreur est survenue lors de la confirmation');
+          toast.error('Erreur', error.message || 'Une erreur est survenue lors de la confirmation');
           
           setTimeout(() => {
             navigate(ROUTES.LOGIN, { 

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { MapPin, Home, Maximize, Bed, Bath, DollarSign, Phone, Mail, Filter } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Immobilier {
   id: string;
@@ -26,6 +26,7 @@ interface Immobilier {
 }
 
 const Immobilier = () => {
+  const { toast } = useToast();
   const [biens, setBiens] = useState<Immobilier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCity, setSelectedCity] = useState<string>('all');
@@ -50,7 +51,7 @@ const Immobilier = () => {
       setBiens(data || []);
     } catch (error) {
       console.error('Error loading immobilier:', error);
-      toast.error('Erreur lors du chargement des biens');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des biens');
     } finally {
       setIsLoading(false);
     }

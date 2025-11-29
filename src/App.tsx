@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
+import Toaster from "@/components/ui/toaster";
 import ConfirmEmail from "./Pages/Auth/ConfirmEmail";
 import { AuthCallback } from "./Pages/AuthCallback";
 import ResetPassword from "./Pages/Auth/ResetPassword";
@@ -175,7 +175,7 @@ function App() {
           <SiteContentProvider>
             <div className="min-h-screen flex flex-col">
               <Suspense fallback={<LoadingFallback />}>
-                <Toaster position="top-center" />
+                <Toaster />
               
               <Routes>
                 {/* Routes d'authentification - Utilisation d'un layout sans navbar ni footer */}

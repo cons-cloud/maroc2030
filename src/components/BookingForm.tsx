@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
+import { useToast } from './ui/use-toast';
 
 interface Service {
   id: string;
@@ -24,6 +24,7 @@ interface BookingFormProps {
 }
 
 const BookingForm = ({ isOpen, onClose, service, serviceType }: BookingFormProps) => {
+  const { toast } = useToast();
   const { user } = useAuth();
   const isAuthenticated = !!user;
   const navigate = useNavigate();
@@ -74,12 +75,12 @@ const BookingForm = ({ isOpen, onClose, service, serviceType }: BookingFormProps
     e.preventDefault();
     
     if (!service) {
-      toast.error('Service non disponible pour le moment');
+      toast.error('Erreur', 'Service non disponible pour le moment');
       return;
     }
     
     if (!formData.checkIn || !formData.checkOut) {
-      toast.error('Veuillez sélectionner les dates de séjour');
+      toast.error('Erreur', 'Veuillez sélectionner les dates de séjour');
       return;
     }
     
@@ -122,7 +123,7 @@ const BookingForm = ({ isOpen, onClose, service, serviceType }: BookingFormProps
       onClose();
     } catch (error) {
       console.error('Erreur lors de la réservation:', error);
-      toast.error('Une erreur est survenue lors de la réservation');
+      toast.error('Erreur', 'Une erreur est survenue lors de la réservation');
     }
   };
 

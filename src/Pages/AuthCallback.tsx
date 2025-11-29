@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ROUTES } from '../config/routes';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 export const AuthCallback = () => {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -73,7 +74,7 @@ export const AuthCallback = () => {
             await handleNewPartnerNotification(session.user);
           }
           
-          toast.success(`Inscription réussie en tant que ${role === 'partner' ? 'partenaire' : 'client'} !`);
+          toast.success('Inscription réussie', `Bienvenue en tant que ${role === 'partner' ? 'partenaire' : 'client'} !`);
         } else {
           // L'utilisateur existe déjà, utiliser son rôle existant
           role = existingProfile.role?.startsWith('partner') ? 'partner' : 'client';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserRole } from '../lib/supabase';
 import { ArrowLeft, Loader2, Eye, EyeOff, User, Mail, Phone, Lock, LogIn } from 'lucide-react';
@@ -22,6 +22,7 @@ const DevenirHote: React.FC = () => {
   const navigate = useNavigate();
   const { signUp, signInWithGoogle, user } = useAuth();
   
+  const { toast } = useToast();
   const [formData, setFormData] = useState<FormData>({
     nom: '',
     prenom: '',
@@ -115,13 +116,14 @@ const DevenirHote: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      const { role } = await signInWithGoogle('host');
+      // Le rôle sera géré dans le callback Google
+      const { role } = await signInWithGoogle();
       console.log('Connexion Google réussie avec le rôle:', role);
       
       // La redirection sera gérée par le composant AuthCallback
     } catch (error: any) {
       console.error('Erreur lors de la connexion avec Google:', error);
-      toast.error(error?.message || 'Erreur lors de la connexion avec Google');
+      toast.error('Erreur', error?.message || 'Erreur lors de la connexion avec Google');
     } finally {
       setIsGoogleLoading(false);
     }
@@ -162,16 +164,14 @@ const DevenirHote: React.FC = () => {
       
       console.log('Inscription réussie avec le rôle:', role);
       
-      toast.success('Inscription réussie ! Vous pouvez maintenant vous connecter.', {
-        duration: 5000,
-      });
+      toast.success('Inscription réussie', 'Vous pouvez maintenant vous connecter.', 5000);
       navigate('/login');
     } catch (error: any) {
       console.error('Registration error:', error);
       const errorMessage = error?.message?.includes('email') 
         ? 'Cette adresse email est déjà utilisée'
         : 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
-      toast.error(errorMessage);
+      toast.error('Erreur', errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -187,7 +187,7 @@ const DevenirHote: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-r from-emerald-50 to-green-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full mx-auto">
         <Link 
           to="/"

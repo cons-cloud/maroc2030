@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Calendar,
   Plus,
@@ -40,6 +40,7 @@ interface EventRegistration {
 }
 
 const PartnerEvents = () => {
+  const { toast } = useToast();
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
@@ -78,7 +79,7 @@ const PartnerEvents = () => {
       setEvents(data || []);
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors du chargement des événements');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des événements');
     } finally {
       setLoading(false);
     }
@@ -117,14 +118,14 @@ const PartnerEvents = () => {
           .eq('id', selectedEvent.id);
 
         if (error) throw error;
-        toast.success('Événement modifié avec succès');
+        toast.success('Succès', 'L\'événement a été modifié avec succès');
       } else {
         const { error } = await supabase
           .from('evenements')
           .insert([eventData]);
 
         if (error) throw error;
-        toast.success('Événement créé avec succès');
+        toast.success('Succès', 'L\'événement a été créé avec succès');
       }
 
       setShowForm(false);
@@ -133,7 +134,7 @@ const PartnerEvents = () => {
       loadEvents();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error('Erreur', 'Une erreur est survenue lors de la sauvegarde');
     }
   };
 
@@ -162,11 +163,11 @@ const PartnerEvents = () => {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success('Événement supprimé');
+      toast.success('Succès', 'L\'événement a été supprimé avec succès');
       loadEvents();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de l\'événement');
     }
   };
 
@@ -178,11 +179,11 @@ const PartnerEvents = () => {
         .eq('id', event.id);
 
       if (error) throw error;
-      toast.success(event.available ? 'Événement désactivé' : 'Événement activé');
+      toast.success('Succès', event.available ? 'L\'événement a été désactivé' : 'L\'événement a été activé');
       loadEvents();
     } catch (error: any) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la modification');
+      toast.error('Erreur', 'Une erreur est survenue lors de la modification de l\'événement');
     }
   };
 

@@ -1,19 +1,17 @@
 import { useState, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../components/ui/use-toast';
 
 type ErrorHandlerOptions = {
   showToast?: boolean;
   logToConsole?: boolean;
   toastOptions?: {
-    duration?: number;
-    position?: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
-    style?: React.CSSProperties;
-    className?: string;
+    title?: string;
     [key: string]: any;
   };
 };
 
 export const useErrorHandler = (defaultOptions: ErrorHandlerOptions = {}) => {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
@@ -51,11 +49,7 @@ export const useErrorHandler = (defaultOptions: ErrorHandlerOptions = {}) => {
       setIsError(true);
       
       if (showToast) {
-        toast.error(message, {
-          duration: 5000,
-          position: 'top-right',
-          ...toastOptions
-        });
+        toast.error('Erreur', message);
       }
       
       return message;

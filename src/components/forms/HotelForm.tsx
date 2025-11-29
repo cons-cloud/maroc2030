@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { uploadMultipleImages, deleteImage } from '../../lib/storage';
 import { X, Upload, Trash2, Loader } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '../ui/use-toast';
 
 interface HotelFormProps {
   hotel?: any;
@@ -11,6 +11,7 @@ interface HotelFormProps {
 }
 
 const HotelForm: React.FC<HotelFormProps> = ({ hotel, onClose, onSuccess }) => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [formData, setFormData] = useState({
@@ -38,9 +39,9 @@ const HotelForm: React.FC<HotelFormProps> = ({ hotel, onClose, onSuccess }) => {
     try {
       const uploadedUrls = await uploadMultipleImages(Array.from(files), 'hotels');
       setImages([...images, ...uploadedUrls]);
-      toast.success(`${uploadedUrls.length} photo(s) ajoutée(s)`);
+      toast.success('Succès', `${uploadedUrls.length} photo(s) ajoutée(s) avec succès`);
     } catch (error) {
-      toast.error('Erreur lors du téléchargement des images');
+      toast.error('Erreur', 'Une erreur est survenue lors du téléchargement des images');
     } finally {
       setUploadingImages(false);
     }
@@ -50,9 +51,9 @@ const HotelForm: React.FC<HotelFormProps> = ({ hotel, onClose, onSuccess }) => {
     try {
       await deleteImage(imageUrl);
       setImages(images.filter((_, i) => i !== index));
-      toast.success('Photo supprimée');
+      toast.success('Succès', 'La photo a été supprimée avec succès');
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de la photo');
     }
   };
 
@@ -91,19 +92,19 @@ const HotelForm: React.FC<HotelFormProps> = ({ hotel, onClose, onSuccess }) => {
           .update(dataToSave)
           .eq('id', hotel.id);
         if (error) throw error;
-        toast.success('Hôtel modifié avec succès');
+        toast.success('Succès', 'Les modifications ont été enregistrées avec succès');
       } else {
         const { error } = await supabase
           .from('hotels')
           .insert([dataToSave]);
         if (error) throw error;
-        toast.success('Hôtel créé avec succès');
+        toast.success('Succès', 'L\'hôtel a été créé avec succès');
       }
 
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de l\'enregistrement');
+      toast.error('Erreur', error.message || 'Une erreur est survenue lors de l\'enregistrement');
     } finally {
       setLoading(false);
     }

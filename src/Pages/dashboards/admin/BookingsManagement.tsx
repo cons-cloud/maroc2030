@@ -14,7 +14,7 @@ import {
   ArrowRight,
   RefreshCw
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 // Types
@@ -70,6 +70,7 @@ const statusOptions = [
 ];
 
 const BookingsManagement: React.FC = () => {
+  const { toast } = useToast();
   // Initialisation des états
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -170,7 +171,7 @@ const BookingsManagement: React.FC = () => {
     } catch (error) {
       console.error('[BookingsManagement] Erreur lors du chargement des réservations:', error);
       setError('Impossible de charger les réservations. Veuillez réessayer.');
-      toast.error('Erreur lors du chargement des réservations');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des réservations');
       return Promise.reject(error);
     } finally {
       // Ne pas désactiver le chargement ici, c'est fait dans le useEffect parent

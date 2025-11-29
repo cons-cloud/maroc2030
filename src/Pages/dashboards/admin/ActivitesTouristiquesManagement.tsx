@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Activity, Plus, Edit, Trash2, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import ActiviteForm from '../../../components/forms/ActiviteForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const ActivitesTouristiquesManagement: React.FC = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +29,7 @@ const ActivitesTouristiquesManagement: React.FC = () => {
       setItems(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors du chargement');
+toast.error('Erreur', 'Une erreur est survenue lors du chargement des activités touristiques');
     } finally {
       setLoading(false);
     }
@@ -54,12 +55,12 @@ const ActivitesTouristiquesManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('activites_touristiques').delete().eq('id', activiteToDelete.id);
       if (error) throw error;
-      toast.success('Activité supprimée');
+      toast.success('Succès', 'L\'activité a été supprimée avec succès');
       setShowConfirm(false);
       setActiviteToDelete(null);
       loadItems();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de l\'activité');
     }
   };
 

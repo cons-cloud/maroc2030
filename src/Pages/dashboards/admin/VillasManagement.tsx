@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Home, Plus, Edit, Trash2, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import VillaForm from '../../../components/forms/VillaForm';
 import ConfirmDialog from '../../../components/modals/ConfirmDialog';
 
 const VillasManagement: React.FC = () => {
+  const { toast } = useToast();
   const [villas, setVillas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +29,7 @@ const VillasManagement: React.FC = () => {
       setVillas(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des villas');
     } finally {
       setLoading(false);
     }
@@ -54,12 +55,12 @@ const VillasManagement: React.FC = () => {
     try {
       const { error } = await supabase.from('villas').delete().eq('id', villaToDelete.id);
       if (error) throw error;
-      toast.success('Villa supprimée');
+      toast.success('Succès', 'La villa a été supprimée avec succès');
       setShowConfirm(false);
       setVillaToDelete(null);
       loadVillas();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de la villa');
     }
   };
 

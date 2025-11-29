@@ -2,7 +2,7 @@ import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaFacebook, FaInstagram, FaTripadv
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import toast from 'react-hot-toast';
+import { useToast } from './ui/use-toast';
 import LegalModal from './LegalModal';
 
 const ScrollToTopButton = () => {
@@ -42,6 +42,7 @@ const ScrollToTopButton = () => {
 };
 
 const Footer = () => {
+  const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -56,7 +57,7 @@ const Footer = () => {
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Veuillez entrer votre email');
+      toast.error('Erreur', 'Veuillez entrer votre email');
       return;
     }
 
@@ -72,17 +73,17 @@ const Footer = () => {
 
       if (error) {
         if (error.code === '23505') {
-          toast.error('Cet email est déjà inscrit');
+          toast.error('Erreur', 'Cet email est déjà inscrit');
         } else {
           throw error;
         }
       } else {
-        toast.success('Merci de votre inscription !');
+        toast.success('Succès', 'Merci de votre inscription !');
         setEmail('');
       }
     } catch (error: any) {
       console.error('Erreur lors de l\'inscription:', error);
-      toast.error('Erreur lors de l\'inscription');
+      toast.error('Erreur', 'Une erreur est survenue lors de l\'inscription');
     } finally {
       setIsSubscribing(false);
     }

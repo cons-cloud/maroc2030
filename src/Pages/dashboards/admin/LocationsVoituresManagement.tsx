@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Edit, Trash2, Search, ArrowLeft } from 'lucide-react';
 import ImageWithFallback from '../../../components/common/ImageWithFallback';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import VoitureForm from '../../../components/forms/VoitureForm';
 
 interface Voiture {
@@ -33,6 +33,7 @@ interface Voiture {
 }
 
 const LocationsVoituresManagement: FC = () => {
+  const { toast } = useToast();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -64,7 +65,7 @@ const LocationsVoituresManagement: FC = () => {
       }
     } catch (error) {
       console.error('Error loading voitures:', error);
-      toast.error('Erreur lors du chargement des voitures');
+      toast.error('Erreur', 'Une erreur est survenue lors du chargement des voitures');
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ const LocationsVoituresManagement: FC = () => {
           setShowForm(true);
         } catch (error) {
           console.error('Error loading voiture:', error);
-          toast.error('Erreur lors du chargement de la voiture');
+          toast.error('Erreur', 'Une erreur est survenue lors du chargement des détails de la voiture');
         }
       };
       
@@ -113,11 +114,11 @@ const LocationsVoituresManagement: FC = () => {
 
       if (error) throw error;
 
-      toast.success('La voiture a été supprimée avec succès');
+      toast.success('Succès', 'La voiture a été supprimée avec succès');
       loadVoitures();
     } catch (error) {
       console.error('Error deleting voiture:', error);
-      toast.error('Une erreur est survenue lors de la suppression de la voiture');
+      toast.error('Erreur', 'Une erreur est survenue lors de la suppression de la voiture');
     } finally {
       setLoading(false);
       setVoitureToDelete(null);
@@ -172,7 +173,7 @@ const LocationsVoituresManagement: FC = () => {
 
         if (error) throw error;
         
-        toast.success('Voiture mise à jour avec succès');
+        toast.success('Succès', 'La voiture a été mise à jour avec succès');
       } else {
         // Création d'une nouvelle voiture
         const { error } = await supabase
@@ -185,7 +186,7 @@ const LocationsVoituresManagement: FC = () => {
 
         if (error) throw error;
         
-        toast.success('Voiture ajoutée avec succès');
+        toast.success('Succès', 'La voiture a été ajoutée avec succès');
       }
       
       loadVoitures();
@@ -193,7 +194,7 @@ const LocationsVoituresManagement: FC = () => {
       setSelectedVoiture(null);
     } catch (error) {
       console.error('Error saving voiture:', error);
-      toast.error('Une erreur est survenue lors de la sauvegarde de la voiture');
+      toast.error('Erreur', 'Une erreur est survenue lors de la sauvegarde de la voiture');
     } finally {
       setLoading(false);
     }
