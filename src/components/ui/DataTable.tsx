@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { LoadingSpinner } from './LoadingSpinner';
+import LoadingSpinner from './LoadingSpinner';
 import { DataTablePagination } from './DataTablePagination';
 import { DataTableFilters } from './DataTableFilters';
 

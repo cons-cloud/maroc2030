@@ -5,7 +5,7 @@ import ServiceHero from '../../components/ServiceHero';
 import ServiceCard from '@/components/ServiceCard';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface Voyage {
   id: string;

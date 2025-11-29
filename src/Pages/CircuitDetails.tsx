@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { Users, Clock, MapPin, Star, Check } from 'lucide-react';
 import CircuitBookingForm from '../components/CircuitBookingForm';
 import AuthGuard from '../components/AuthGuard';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { STRIPE_PUBLIC_KEY } from '../config/stripe';
 
 const stripePromise = loadStripe(STRIPE_PUBLIC_KEY);

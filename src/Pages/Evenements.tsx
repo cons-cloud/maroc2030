@@ -7,7 +7,7 @@ import UniversalBookingForm from '../components/UniversalBookingForm';
 import AuthGuard from '../components/AuthGuard';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/use-toast';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const stripePromise = loadStripe(import.meta.env['VITE_STRIPE_PUBLIC_KEY'] || 'pk_test_51QKxxx');
 

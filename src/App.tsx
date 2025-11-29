@@ -25,9 +25,9 @@ const DevenirHote = lazy(() => import("./Pages/DevenirHote"));
 // Composants de mise en page
 import DashboardLayout from './components/DashboardLayout';
 import ClientPageLayout from './components/ClientPageLayout';
+import Footer from "@/components/Footer";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 const Navbar = lazy(() => import("./components/Navbar"));
-const Footer = lazy(() => import("./components/Footer"));
-const LoadingSpinner = lazy(() => import("./components/LoadingSpinner"));
 const BookingForm = lazy(() => import("./components/BookingForm"));
 
 // Pages publiques
