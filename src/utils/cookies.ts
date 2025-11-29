@@ -1,4 +1,4 @@
-import Cookies, { CookieAttributes } from 'js-cookie';
+import Cookies from 'js-cookie';
 
 type CookieAttributesType = {
   path?: string;

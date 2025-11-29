@@ -151,3 +151,4 @@ yarn-error.log*
 *.code-workspace
 STRIPE_SETUP_GUIDE.md
 CONFIGURATION_STRIPE.md
+.env*.local

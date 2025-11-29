@@ -1,5 +1,5 @@
 // Export all UI components
-export { default as Button } from './button';
+export { default as Button } from './Button';
 export { Input } from './input';
 export { default as LoadingSpinner } from './LoadingSpinner';
 
