@@ -116,7 +116,7 @@ const DevenirHote: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      // Le rôle sera géré dans le callback Google
+      // L'authentification Google ne nécessite pas de paramètre de rôle
       const { role } = await signInWithGoogle();
       console.log('Connexion Google réussie avec le rôle:', role);
       

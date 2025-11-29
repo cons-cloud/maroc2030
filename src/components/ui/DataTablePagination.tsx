@@ -1,4 +1,4 @@
-import Button from './button';
+import Button from './Button';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 interface DataTablePaginationProps {

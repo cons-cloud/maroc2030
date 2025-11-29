@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Filter, X } from "lucide-react";
-import Button from "@/components/ui/button";
+import Button from "@/components/ui/Button";
 
 type PartnerFiltersProps = {
   searchTerm: string;

@@ -1,13 +1,13 @@
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
-import { loadStripe } from '@stripe/stripe-js';
-import type { Stripe, StripeCardElement } from '@stripe/stripe-js';
+import { loadStripe, type Stripe as StripeJs } from '@stripe/stripe-js';
+import Stripe from 'stripe';
 
-// Initialisation de Stripe avec la clé publique
+// Initialisation de Stripe avec la clé publique côté client
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
 // Types pour les paiements
-export type PaymentStatus = 'pending' | 'succeeded' | 'failed' | 'canceled' | 'refunded';
+export type PaymentStatus = 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'requires_capture' | 'canceled' | 'succeeded' | 'refunded';
 
 export interface PaymentRecord {
   id?: string;
@@ -36,6 +36,10 @@ interface CreatePaymentIntentParams {
   metadata?: Record<string, any>;
   bookingId?: string;
   partnerId?: string;
+  payment_method_types?: string[];
+  setup_future_usage?: 'on_session' | 'off_session';
+  confirm?: boolean;
+  receipt_email?: string;
 }
 
 interface ConfirmPaymentParams {
@@ -43,6 +47,14 @@ interface ConfirmPaymentParams {
   paymentMethod: any;
   savePaymentMethod?: boolean;
   customerEmail?: string;
+  return_url?: string;
+}
+
+interface RefundPaymentParams {
+  paymentIntentId: string;
+  amount?: number;
+  reason?: 'requested_by_customer' | 'duplicate' | 'fraudulent';
+  metadata?: Record<string, string>;
 }
 
 /**
@@ -50,10 +62,29 @@ interface ConfirmPaymentParams {
  */
 class StripeService {
   private static instance: StripeService;
-  private stripe: Promise<Stripe | null>;
+  private stripePromise: Promise<StripeJs | null>;
 
   private constructor() {
-    this.stripe = stripePromise;
+    this.stripePromise = stripePromise;
+  }
+
+  // Méthode pour accéder à l'instance Stripe côté client
+  private async getStripeClient(): Promise<StripeJs> {
+    const stripe = await this.stripePromise;
+    if (!stripe) {
+      throw new Error('Stripe n\'a pas pu être initialisé');
+    }
+    return stripe;
+  }
+
+  // Méthode pour accéder à l'API Stripe côté serveur
+  private getStripeServer(): Stripe {
+    if (!import.meta.env.VITE_STRIPE_SECRET_KEY) {
+      throw new Error('Clé secrète Stripe non configurée');
+    }
+    return new Stripe(import.meta.env.VITE_STRIPE_SECRET_KEY, {
+      apiVersion: '2025-10-29.clover',
+    });
   }
 
   public static getInstance(): StripeService {
@@ -66,50 +97,55 @@ class StripeService {
   /**
    * Crée une intention de paiement
    */
-  async createPaymentIntent(params: CreatePaymentIntentParams) {
+  async createPaymentIntent(params: CreatePaymentIntentParams): Promise<{ clientSecret: string | null; paymentIntent: Stripe.Response<Stripe.PaymentIntent> }> {
     try {
-      const { amount, currency = 'MAD', customerId, description, metadata, bookingId, partnerId } = params;
+      const { 
+        amount, 
+        currency = 'MAD', 
+        customerId, 
+        description, 
+        metadata = {},
+        bookingId, 
+        partnerId, 
+        payment_method_types = ['card'],
+        setup_future_usage,
+        receipt_email
+      } = params;
+      
+      const stripe = await this.getStripeClient();
       
       // Calculer la commission (10% du montant total)
       const commissionRate = 0.10; // 10%
       const adminCommission = amount * commissionRate;
       const partnerAmount = amount - adminCommission;
       
-      // 1. Créer l'intention de paiement via l'API Stripe
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // 1. Créer l'intention de paiement via l'API Stripe côté serveur
+      const stripeServer = this.getStripeServer();
+      const paymentIntent = await stripeServer.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convertir en centimes
+        currency,
+        customer: customerId,
+        description,
+        payment_method_types,
+        setup_future_usage,
+        receipt_email,
+        metadata: {
+          ...metadata,
+          bookingId: bookingId || '',
+          partnerId: partnerId || '',
+          adminCommission: adminCommission.toString(),
+          partnerAmount: partnerAmount.toString(),
+          commissionRate: commissionRate.toString()
         },
-        body: JSON.stringify({
-          amount: Math.round(amount * 100), // Convertir en centimes
-          currency,
-          customer: customerId,
-          description,
-          metadata: {
-            ...metadata,
-            bookingId,
-            partnerId,
-            adminCommission,
-            partnerAmount
-          },
-        }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la création du paiement');
-      }
-
-      const { clientSecret, paymentIntent } = await response.json();
-
       // 2. Enregistrer le paiement en base de données avec la commission
-      if (bookingId) {
+      if (bookingId && paymentIntent.id) {
         await this.recordPayment({
           booking_id: bookingId,
           amount,
           currency,
-          status: 'pending',
+          status: paymentIntent.status as PaymentStatus,
           payment_intent_id: paymentIntent.id,
           customer_id: customerId,
           partner_id: partnerId,
@@ -127,7 +163,10 @@ class StripeService {
         });
       }
 
-      return { clientSecret, paymentIntent };
+      return { 
+        clientSecret: paymentIntent.client_secret, 
+        paymentIntent 
+      };
     } catch (error: any) {
       console.error('Erreur lors de la création de l\'intention de paiement:', error);
       toast.error('Erreur lors de la préparation du paiement');
@@ -138,21 +177,25 @@ class StripeService {
   /**
    * Confirme un paiement
    */
-  async confirmPayment(params: ConfirmPaymentParams) {
+  async confirmPayment(params: ConfirmPaymentParams): Promise<Stripe.PaymentIntent | Stripe.SetupIntent> {
     try {
-      const { paymentIntentId, paymentMethod, savePaymentMethod = false, customerEmail } = params;
-      const stripe = await this.stripe;
+      const { 
+        paymentIntentId, 
+        paymentMethod, 
+        savePaymentMethod = false, 
+        customerEmail,
+        return_url
+      } = params;
       
-      if (!stripe) {
-        throw new Error('Stripe n\'est pas initialisé');
-      }
-
+      const stripe = await this.getStripeClient();
+      
       // 1. Confirmer le paiement côté client
       const result = await stripe.confirmCardPayment(paymentIntentId, {
         payment_method: paymentMethod.id,
         setup_future_usage: savePaymentMethod ? 'off_session' : undefined,
         receipt_email: customerEmail,
-      });
+        return_url
+      }) as { paymentIntent?: Stripe.PaymentIntent; error?: any; };
 
       if (result.error) {
         throw result.error;
@@ -163,13 +206,16 @@ class StripeService {
       }
 
       // 2. Mettre à jour le statut du paiement en base de données
-      const status = result.paymentIntent.status as PaymentStatus;
-      await this.updatePaymentStatus(result.paymentIntent.id, status, {
+      const paymentIntent = result.paymentIntent;
+      const status = paymentIntent.status as PaymentStatus;
+      const receiptUrl = (paymentIntent as any).charges?.data[0]?.receipt_url;
+      
+      await this.updatePaymentStatus(paymentIntent.id, status, {
         payment_method_id: paymentMethod.id,
-        receipt_url: (result.paymentIntent as any).receipt_url,
+        receipt_url: receiptUrl
       });
 
-      return result.paymentIntent;
+      return paymentIntent;
     } catch (error: any) {
       console.error('Erreur lors de la confirmation du paiement:', error);
       
@@ -181,15 +227,56 @@ class StripeService {
       } else if (error.code === 'insufficient_funds') {
         throw new Error('Fonds insuffisants sur la carte.');
       } else {
-        throw new Error('Une erreur est survenue lors du traitement de votre paiement.');
+        throw new Error(error.message || 'Une erreur est survenue lors du traitement de votre paiement.');
       }
+    }
+  }
+  
+  /**
+   * Rembourse un paiement
+   */
+  async refundPayment(params: RefundPaymentParams): Promise<Stripe.Refund> {
+    try {
+      const { 
+        paymentIntentId, 
+        amount, 
+        reason = 'requested_by_customer',
+        metadata = {}
+      } = params;
+      
+      // 1. Effectuer le remboursement via l'API Stripe côté serveur
+      const stripeServer = this.getStripeServer();
+      const refund = await stripeServer.refunds.create({
+        payment_intent: paymentIntentId,
+        amount: amount ? Math.round(amount * 100) : undefined, // Convertir en centimes si amount est fourni
+        reason: reason as any, // Type assertion car le type Reason est plus restrictif
+        metadata
+      });
+      
+      if (refund.status === 'succeeded') {
+        // 2. Mettre à jour le statut du paiement en base de données
+        await this.updatePaymentStatus(paymentIntentId, 'refunded', {
+          metadata: {
+            ...metadata,
+            refund_id: refund.id,
+            refund_amount: amount?.toString(),
+            refund_reason: reason
+          }
+        } as any);
+      }
+      
+      return refund;
+    } catch (error: any) {
+      console.error('Erreur lors du remboursement du paiement:', error);
+      toast.error('Erreur lors du remboursement du paiement');
+      throw error;
     }
   }
 
   /**
    * Enregistre un paiement dans la base de données
    */
-  async recordPayment(paymentData: Omit<PaymentRecord, 'id' | 'created_at' | 'updated_at'>) {
+  async recordPayment(paymentData: Omit<PaymentRecord, 'id' | 'created_at' | 'updated_at'>): Promise<PaymentRecord> {
     try {
       const { data, error } = await supabase
         .from('payments')
@@ -215,7 +302,7 @@ class StripeService {
     paymentIntentId: string, 
     status: PaymentStatus, 
     updates: Partial<Omit<PaymentRecord, 'id' | 'created_at' | 'updated_at'>> = {}
-  ) {
+  ): Promise<PaymentRecord> {
     try {
       const { data, error } = await supabase
         .from('payments')
@@ -283,30 +370,9 @@ class StripeService {
   }
 
   /**
-        receipt_url: (result.paymentIntent as any).receipt_url,
-      });
-
-      return result.paymentIntent;
-    } catch (error: any) {
-      console.error('Erreur lors de la confirmation du paiement:', error);
-      
-      // Gestion des erreurs spécifiques
-      if (error.code === 'card_declined') {
-        throw new Error('Votre carte a été refusée. Veuillez essayer une autre méthode de paiement.');
-      } else if (error.code === 'expired_card') {
-        throw new Error('Votre carte a expiré. Veuillez utiliser une autre carte.');
-      } else if (error.code === 'insufficient_funds') {
-        throw new Error('Fonds insuffisants sur la carte.');
-      } else {
-        throw new Error('Une erreur est survenue lors du traitement de votre paiement.');
-      }
-    }
-  }
-
-  /**
    * Récupère les informations d'un paiement
    */
-  async getPayment(paymentIntentId: string) {
+  async getPayment(paymentIntentId: string): Promise<PaymentRecord> {
     try {
       const payment = await this.getPaymentByIntentId(paymentIntentId);
       if (!payment) {
@@ -318,41 +384,7 @@ class StripeService {
       throw error;
     }
   }
-
-  /**
-   * Rembourse un paiement
-   */
-  async refundPayment(paymentIntentId: string, amount?: number) {
-    try {
-      const response = await fetch('/api/refund-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentIntentId,
-          amount: amount ? Math.round(amount * 100) : undefined,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors du remboursement');
-      }
-
-      const refund = await response.json();
-      
-      // Mettre à jour le statut du paiement en base de données
-      if (refund.status === 'succeeded') {
-        await this.updatePaymentStatus(paymentIntentId, 'refunded');
-      }
-
-      return refund;
-    } catch (error) {
-      console.error('Erreur lors du remboursement:', error);
-      throw error;
-    }
-  }
 }
 
+// Création et exportation d'une instance unique du service Stripe
 export const stripeService = StripeService.getInstance();

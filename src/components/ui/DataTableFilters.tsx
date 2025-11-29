@@ -1,6 +1,6 @@
 import { Search, Filter as FilterIcon, X } from 'lucide-react';
 import { Input } from './input';
-import Button from './button';
+import Button from './Button';
 
 // Composant Select simplifié pour éviter les problèmes d'importation
 const SimpleSelect = ({
