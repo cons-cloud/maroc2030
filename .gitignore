@@ -19,7 +19,7 @@ node_modules
 !.yarn/versions
 
 # Build outputs
-dist
+# dist - Commenté pour permettre le déploiement Vercel
 dist-ssr
 build
 .next
