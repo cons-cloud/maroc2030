@@ -152,3 +152,4 @@ yarn-error.log*
 STRIPE_SETUP_GUIDE.md
 CONFIGURATION_STRIPE.md
 .env*.local
+dist/
