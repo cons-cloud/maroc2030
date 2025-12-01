@@ -41,6 +41,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [saveCard, setSaveCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [succeeded, setSucceeded] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string>('');
 
   // Options de style pour l'élément de carte
   const cardElementOptions = {
@@ -75,9 +76,10 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
     try {
       // 1. Créer une intention de paiement
-      const { clientSecret } = await stripeService.createPaymentIntent({
+      const { clientSecret: newClientSecret } = await stripeService.createPaymentIntent({
         amount: amount,
         currency,
+        receipt_email: metadata.customerEmail,
         customerId,
         description,
         metadata: {
@@ -85,6 +87,14 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
           save_payment_method: saveCard.toString(),
         },
       });
+
+      if (!newClientSecret) {
+        throw new Error('Impossible de créer une intention de paiement. Veuillez réessayer.');
+      }
+
+      // S'assurer que clientSecret est une chaîne
+      const secret = String(newClientSecret);
+      setClientSecret(secret);
 
       // 2. Récupérer l'élément de carte
       const cardElement = elements.getElement(CardElement);
@@ -120,6 +130,10 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       // Ne pas inclure receipt_email s'il est null ou undefined
       if (metadata.customerEmail) {
         paymentOptions.receipt_email = metadata.customerEmail;
+      }
+      
+      if (!clientSecret) {
+        throw new Error('Erreur de configuration du paiement. Veuillez réessayer.');
       }
       
       const result = await stripe.confirmCardPayment(clientSecret, paymentOptions);
