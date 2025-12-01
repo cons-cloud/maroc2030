@@ -214,7 +214,7 @@ export const SiteSettings: React.FC = () => {
                 name="primary_color"
                 control={control}
                 render={({ field: { onChange, value } }) => (
-                  <ColorPicker value={value} onChange={onChange} />
+                  <ColorPicker value={value || '#3b82f6'} onChange={onChange} />
                 )}
               />
             </div>
@@ -227,7 +227,7 @@ export const SiteSettings: React.FC = () => {
                 name="secondary_color"
                 control={control}
                 render={({ field: { onChange, value } }) => (
-                  <ColorPicker value={value} onChange={onChange} />
+                  <ColorPicker value={value || '#3b82f6'} onChange={onChange} />
                 )}
               />
             </div>
@@ -240,7 +240,7 @@ export const SiteSettings: React.FC = () => {
                 name="accent_color"
                 control={control}
                 render={({ field: { onChange, value } }) => (
-                  <ColorPicker value={value} onChange={onChange} />
+                  <ColorPicker value={value || '#3b82f6'} onChange={onChange} />
                 )}
               />
             </div>
