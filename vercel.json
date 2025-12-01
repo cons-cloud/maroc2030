@@ -9,12 +9,15 @@
       }
     }
   ],
-  "rewrites": [
+  "headers": [
     {
       "source": "/assets/(.*)",
-      "destination": "/assets/$1",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" }
-    },
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
+  "rewrites": [
     { 
       "source": "/dashboard", 
       "destination": "/dashboard/overview" 
