@@ -1,13 +1,32 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'url';
+import { visualizer } from 'rollup-plugin-visualizer';
 
-export default defineConfig({
-  plugins: [
+// Configuration pour Vercel
+export default defineConfig(({ mode }) => {
+  // Charger les variables d'environnement
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  const plugins = [
     react(),
     tailwindcss(),
-  ],
+  ];
+
+  // Ajouter l'analyse du bundle en mode production
+  if (mode === 'analyze') {
+    plugins.push(
+      visualizer({
+        open: true,
+        brotliSize: true,
+        filename: 'dist/bundle-analysis.html',
+      }) as any
+    );
+  }
+  
+  return {
+    plugins,
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -16,11 +35,21 @@ export default defineConfig({
   base: '/',
   server: {
     port: 3000,
+    host: true,
+    strictPort: true,
+  },
+  preview: {
+    port: 3000,
+    host: true,
+    strictPort: true,
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    sourcemap: mode !== 'production',
+    minify: 'terser',
     chunkSizeWarningLimit: 1000, // Augmente la limite d'avertissement de taille des chunks
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
@@ -64,12 +93,13 @@ export default defineConfig({
       },
     },
   },
-  // Configuration pour le chargement des modules
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-  },
-  // Configuration pour le chargement des fichiers de traduction
-  define: {
-    'process.env': {}
-  }
+    // Configuration pour le chargement des modules
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router-dom'],
+    },
+    // Configuration pour le chargement des fichiers de traduction
+    define: {
+      'process.env': {}
+    }
+  };
 });
