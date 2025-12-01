@@ -7,7 +7,9 @@ import PaymentIcons from './PaymentIcons';
 import { stripeService } from '../../services/stripeService';
 
 interface PaymentMetadata {
-  customerEmail?: string | null;
+  customerEmail?: string;
+  customerName?: string;
+  customerPhone?: string;
   [key: string]: any;
 }
 
