@@ -12,17 +12,16 @@
   "routes": [
     {
       "src": "/assets/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "dest": "/assets/$1"
     },
     {
       "src": "/(.*)",
       "dest": "/index.html"
-    },
-    {
-      "src": "/dashboard",
-      "dest": "/dashboard/overview",
-      "status": 307
     }
+  ],
+  "rewrites": [
+    { "source": "/dashboard", "destination": "/dashboard/overview" }
   ],
   "buildCommand": "yarn build",
   "outputDirectory": "dist",
