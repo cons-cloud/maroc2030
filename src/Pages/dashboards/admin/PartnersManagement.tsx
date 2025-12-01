@@ -426,7 +426,8 @@ const PartnersManagement = () => {
   // Gestion des détails bancaires
   const handleBankDetailsChange = (id: string, field: 'bank_account' | 'iban', value: string) => {
     setCurrentBankDetails(prev => ({
-      ...prev,
+      bank_account: prev?.bank_account || '',
+      iban: prev?.iban || '',
       [field]: value
     }));
     
