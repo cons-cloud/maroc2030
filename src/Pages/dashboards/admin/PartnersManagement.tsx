@@ -228,7 +228,7 @@ const PartnersManagement = () => {
   });
   const [loading, setLoading] = useState<boolean>(true);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [editingPartner, setEditingPartner] = useState<Partner | undefined>(undefined);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
   const [deletingPartner, setDeletingPartner] = useState<Partner | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
