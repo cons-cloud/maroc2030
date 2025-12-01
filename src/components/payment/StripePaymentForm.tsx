@@ -6,6 +6,11 @@ import { Loader2, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 import PaymentIcons from './PaymentIcons';
 import { stripeService } from '../../services/stripeService';
 
+interface PaymentMetadata {
+  customerEmail?: string | null;
+  [key: string]: any;
+}
+
 interface StripePaymentFormProps {
   amount: number;
   currency?: string;
@@ -14,7 +19,7 @@ interface StripePaymentFormProps {
   showSaveCardOption?: boolean;
   customerId?: string;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: PaymentMetadata;
 }
 
 export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({

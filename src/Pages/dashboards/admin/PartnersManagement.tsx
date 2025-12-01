@@ -547,7 +547,7 @@ const PartnersManagement = () => {
   // Fonction pour fermer le formulaire et recharger les données
   const handleFormClose = useCallback(() => {
     setIsFormOpen(false);
-    setEditingPartner(null);
+    setEditingPartner(undefined);
     loadPartners(currentPage);
   }, [currentPage, loadPartners]);
 
@@ -557,7 +557,7 @@ const PartnersManagement = () => {
         <h1 className="text-2xl font-bold">Gestion des partenaires</h1>
         <Button 
           onClick={() => {
-            setEditingPartner(null);
+            setEditingPartner(undefined);
             setIsFormOpen(true);
           }}>
             <Plus className="mr-2 h-4 w-4" />
