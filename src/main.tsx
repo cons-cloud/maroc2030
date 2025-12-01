@@ -7,13 +7,24 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 import App from './App';
 import './index.css';
 
-// Vérification des variables d'environnement critiques
-const requiredEnvVars = [
+// Création du client Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
+
+// Vérification des variables d'environnement critiques (uniquement en production)
+const requiredEnvVars = import.meta.env.PROD ? [
   'VITE_SUPABASE_URL',
   'VITE_SUPABASE_ANON_KEY',
   'VITE_STRIPE_PUBLIC_KEY',
   'VITE_APP_URL'
-] as const;
+] as const : [];
 
 const missingVars = requiredEnvVars.filter(varName => !import.meta.env[varName]);
 
@@ -28,60 +39,63 @@ if (missingVars.length > 0) {
     
     // Affiche une alerte dans l'interface utilisateur
     const alertDiv = document.createElement('div');
-    alertDiv.style.position = 'fixed';
-    alertDiv.style.top = '0';
-    alertDiv.style.left = '0';
-    alertDiv.style.right = '0';
-    alertDiv.style.padding = '1rem';
-    alertDiv.style.backgroundColor = '#fef2f2';
-    alertDiv.style.color = '#991b1b';
-    alertDiv.style.borderBottom = '1px solid #fecaca';
-    alertDiv.style.zIndex = '9999';
-    alertDiv.style.fontFamily = 'monospace';
-    alertDiv.style.whiteSpace = 'pre';
-    alertDiv.style.overflowX = 'auto';
-    alertDiv.textContent = errorMessage;
+    alertDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#f8d7da;color:#721c24;padding:1rem;z-index:9999;font-family:sans-serif;';
+    alertDiv.textContent = 'ERREUR: Variables d\'environnement manquantes. Voir la console pour plus de détails.';
     document.body.prepend(alertDiv);
   }
   
-  // En production, on peut choisir de bloquer le chargement ou de continuer avec des valeurs par défaut
+  // En production, on lance une erreur qui sera attrapée par le bloc try/catch plus bas
   if (import.meta.env.PROD) {
-    console.error('Erreur critique : variables d\'environnement manquantes');
-    // Ici, vous pourriez rediriger vers une page d'erreur ou afficher un message utilisateur
+    throw new Error(errorMessage);
   }
 }
 
-// Création d'un client React Query avec des options par défaut
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
+// Fonction pour afficher l'erreur de manière élégante
+function renderError(message: string) {
+  const errorStyle = {
+    fontFamily: 'sans-serif',
+    padding: '2rem',
+    maxWidth: '800px',
+    margin: '0 auto',
+    color: '#721c24',
+    backgroundColor: '#f8d7da',
+    border: '1px solid #f5c6cb',
+    borderRadius: '0.25rem',
+    whiteSpace: 'pre-line',
+    textAlign: 'center' as const,
+  };
 
-// Récupération de l'élément racine
-const container = document.getElementById('root');
-
-if (!container) {
-  throw new Error("L'élément racine 'root' est introuvable dans le DOM");
+  const errorDiv = document.createElement('div');
+  errorDiv.style.cssText = Object.entries(errorStyle).map(([key, value]) => 
+    `${key.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${value}${typeof value === 'number' ? 'px' : ''}`
+  ).join(';');
+  
+  errorDiv.textContent = message;
+  document.body.innerHTML = '';
+  document.body.appendChild(errorDiv);
+  document.title = 'Erreur - Maroc 2030';
 }
 
-// Création de la racine de rendu
-const root = createRoot(container);
+// Création de la racine React
+try {
+  const container = document.getElementById('root');
+  if (!container) throw new Error('Élément racine introuvable');
 
-// Rendu de l'application avec les fournisseurs nécessaires
-root.render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <CurrencyProvider>
-          <App />
-          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-        </CurrencyProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  </React.StrictMode>
-);
+  const root = createRoot(container);
+
+  root.render(
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <CurrencyProvider>
+            <App />
+          </CurrencyProvider>
+        </BrowserRouter>
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
+} catch (error) {
+  console.error('Erreur lors du rendu de l\'application :', error);
+  renderError(`Erreur critique lors du chargement de l'application :\n\n${error instanceof Error ? error.message : String(error)}`);
+}

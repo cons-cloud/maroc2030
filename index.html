@@ -94,15 +94,18 @@
         return ss;
       };
       
-      // Charger le CSS de manière asynchrone
-      loadCSS('/assets/index.css');
+      // Chargement asynchrone du CSS de secours
+      // Le CSS principal est maintenant chargé de manière synchrone
     </script>
 
     <title>Maroc 2030 - Votre guide de voyage au Maroc</title>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Chargement des dépendances avant le script principal -->
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Chargement du CSS de manière synchrone pour éviter les problèmes de FOUC -->
+    <link rel="stylesheet" href="/src/index.css" />
     <script>
       // Enregistrement du Service Worker
       if ('serviceWorker' in navigator) {

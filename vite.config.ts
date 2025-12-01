@@ -8,7 +8,7 @@ import { resolve } from 'path';
 // Configuration pour Vercel
 export default defineConfig(({ mode }) => {
   // Charger les variables d'environnement
-  const env = loadEnv(mode, process.cwd(), '');
+  loadEnv(mode, process.cwd(), '');
   
   const plugins = [
     react(),
@@ -34,6 +34,11 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url))
       }
     },
+    server: {
+      port: 3000,
+      host: true,
+      strictPort: true,
+    },
     preview: {
       port: 3000,
       host: true,
@@ -46,6 +51,10 @@ export default defineConfig(({ mode }) => {
       minify: 'terser',
       chunkSizeWarningLimit: 1000,
       emptyOutDir: true,
+      target: 'esnext',
+      modulePreload: {
+        polyfill: true
+      },
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html')
