@@ -70,7 +70,7 @@ const HotelForm: React.FC<HotelFormProps> = ({ hotel, onClose, onSuccess }) => {
   const handleRemoveAmenity = (index: number) => {
     setFormData({
       ...formData,
-      amenities: formData.amenities.filter((_, i) => i !== index)
+      amenities: formData.amenities.filter((_: any, i: number) => i !== index)
     });
   };
 
@@ -293,16 +293,13 @@ const HotelForm: React.FC<HotelFormProps> = ({ hotel, onClose, onSuccess }) => {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {formData.amenities.map((amenity, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm flex items-center gap-2"
-                >
+              {formData.amenities.map((amenity: string, index: number) => (
+                <span key={index} className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm">
                   {amenity}
                   <button
                     type="button"
                     onClick={() => handleRemoveAmenity(index)}
-                    className="hover:text-red-600"
+                    className="ml-2 hover:text-red-600"
                   >
                     <X className="h-4 w-4" />
                   </button>

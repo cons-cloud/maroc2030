@@ -107,7 +107,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       // 4. Confirmer le paiement
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: paymentMethod.id,
-        receipt_email: metadata.customerEmail,
+        receipt_email: metadata.customerEmail || undefined,
         setup_future_usage: saveCard ? 'off_session' : undefined,
       });
 

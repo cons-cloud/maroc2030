@@ -79,7 +79,7 @@ const PartnerProducts: React.FC = () => {
         .single();
         
       if (productData?.images?.length) {
-        const filesToDelete = productData.images.map(url => {
+        const filesToDelete = productData.images.map((url) => {
           const path = url.split('/').pop();
           return `products/${id}/${path}`;
         });

@@ -28,7 +28,7 @@ interface ServiceData {
   description: string;
   price: number;
   images?: string[];
-  type: string;
+  type?: string;  // Rendre le type optionnel
   [key: string]: any;
 }
 
