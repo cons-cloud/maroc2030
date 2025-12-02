@@ -10,10 +10,25 @@ export default defineConfig(({ mode }) => {
   // Charger les variables d'environnement
   loadEnv(mode, process.cwd(), '');
   
+  const isProduction = mode === 'production';
+  
   const plugins = [
-    react(),
+    // Configuration minimale de React Refresh
+    react({
+      // Désactive le chargement automatique de Babel pour éviter les doublons
+      babel: {
+        babelrc: false,
+        configFile: false,
+        plugins: []
+      }
+    }),
     tailwindcss(),
   ];
+
+  // Désactive complètement le HMR en production
+  if (isProduction) {
+    process.env.VITE_DISABLE_HMR = 'true';
+  }
 
   // Ajouter l'analyse du bundle en mode production
   if (mode === 'analyze') {
@@ -25,9 +40,10 @@ export default defineConfig(({ mode }) => {
       }) as any
     );
   }
-  
-  return {
-    base: './',
+
+  // Configuration de base
+  const config = {
+    base: '/',
     plugins,
     resolve: {
       alias: {
@@ -38,6 +54,11 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: true,
       strictPort: true,
+      hmr: !isProduction ? {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 3000,
+      } : false,
     },
     preview: {
       port: 3000,
@@ -47,11 +68,11 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
-      sourcemap: mode !== 'production',
-      minify: 'terser',
+      target: 'esnext',
+      minify: isProduction ? ('terser' as const) : false,
+      sourcemap: !isProduction,
       chunkSizeWarningLimit: 1000,
       emptyOutDir: true,
-      target: 'esnext',
       modulePreload: {
         polyfill: true
       },
@@ -60,7 +81,7 @@ export default defineConfig(({ mode }) => {
           main: resolve(__dirname, 'index.html')
         },
         output: {
-          manualChunks: (id) => {
+          manualChunks: (id: string) => {
             if (id.includes('node_modules')) {
               if (id.includes('@mui/') || id.includes('@emotion/')) {
                 return 'vendor_mui';
@@ -98,13 +119,18 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    // Configuration pour le chargement des modules
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom'],
     },
-    // Configuration pour le chargement des fichiers de traduction
     define: {
-      'process.env': {}
+      'process.env': {},
+      ...(isProduction ? {
+        'import.meta.env.VITE_APP_HMR': 'false',
+        'import.meta.hot': 'undefined',
+        'process.env.NODE_ENV': '"production"'
+      } : {})
     }
   };
+
+  return config;
 });
