@@ -6,10 +6,11 @@ import { visualizer } from 'rollup-plugin-visualizer';
 
 // Configuration Vite
 export default defineConfig(({ mode }: ConfigEnv) => {
+
   // Charger les variables d'environnement
   loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
-  const base = isProduction ? '/' : '/';
+  const base = isProduction ? './' : '/';
   
   const plugins = [
     react({
