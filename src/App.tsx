@@ -27,7 +27,7 @@ import DashboardLayout from './components/DashboardLayout';
 import ClientPageLayout from './components/ClientPageLayout';
 import Footer from "@/components/Footer";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-const Navbar = lazy(() => import("./components/Navbar"));
+import Navbar from "./components/Navbar";
 const BookingForm = lazy(() => import("./components/BookingForm"));
 
 // Pages publiques

@@ -2,6 +2,8 @@
 export { default as Button } from './Button';
 export { Input } from './input';
 export { default as LoadingSpinner } from './LoadingSpinner';
+export { default as Toaster } from './toaster';
+export { useToast } from './use-toast';
 
 // DataTable components
 export { default as DataTable } from './DataTable';

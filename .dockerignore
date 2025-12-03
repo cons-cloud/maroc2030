@@ -1,0 +1,46 @@
+node_modules
+npm-debug.log
+build
+.DS_Store
+.git
+.gitignore
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Fichiers de configuration
+.vscode/
+.idea/
+
+# Fichiers de déploiement
+fly.toml
+.fly/
+
+# Fichiers de test
+**/__tests__
+**/*.test.*
+**/*.spec.*
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*.swp
+*~
+
+# Fichiers de logs
+logs
+*.log
+
+# Dossiers de dépendances
+.pnp
+.pnp.js
+
+# Fichiers de couverture
+yarn-debug.log*
+yarn-error.log*
+coverage
+
+# Fichiers système
+.DS_Store
+Thumbs.db

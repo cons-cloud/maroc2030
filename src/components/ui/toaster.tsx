@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useToast } from './use-toast-shadcn';
 import { Toast, ToastTitle, ToastDescription, ToastClose } from './toast';
 
-function Toaster() {
+export function Toaster() {
   const { toasts } = useToast();
 
   return (

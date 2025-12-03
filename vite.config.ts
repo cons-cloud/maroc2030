@@ -1,21 +1,17 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type ConfigEnv, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { fileURLToPath, URL } from 'url';
+import { fileURLToPath } from 'url';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { resolve } from 'path';
 
-// Configuration pour Vercel
-export default defineConfig(({ mode }) => {
+// Configuration Vite
+export default defineConfig(({ mode }: ConfigEnv) => {
   // Charger les variables d'environnement
   loadEnv(mode, process.cwd(), '');
-  
   const isProduction = mode === 'production';
   
   const plugins = [
-    // Configuration minimale de React Refresh
     react({
-      // Désactive le chargement automatique de Babel pour éviter les doublons
       babel: {
         babelrc: false,
         configFile: false,
@@ -25,7 +21,7 @@ export default defineConfig(({ mode }) => {
     tailwindcss(),
   ];
 
-  // Désactive complètement le HMR en production
+  // Désactiver le HMR en production
   if (isProduction) {
     process.env.VITE_DISABLE_HMR = 'true';
   }
@@ -42,14 +38,11 @@ export default defineConfig(({ mode }) => {
   }
 
   // Configuration de base
-  const config = {
+  const config: UserConfig = {
     base: '/',
     plugins,
-    resolve: {
-      alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
-      }
-    },
+    
+    // Configuration du serveur de développement
     server: {
       port: 3000,
       host: true,
@@ -60,64 +53,47 @@ export default defineConfig(({ mode }) => {
         port: 3000,
       } : false,
     },
+    
+    // Configuration pour la prévisualisation
     preview: {
       port: 3000,
       host: true,
       strictPort: true,
     },
+    
+    // Configuration pour la construction
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
-      target: 'esnext',
-      minify: isProduction ? ('terser' as const) : false,
       sourcemap: !isProduction,
-      chunkSizeWarningLimit: 1000,
-      emptyOutDir: true,
-      modulePreload: {
-        polyfill: true
-      },
+      minify: isProduction ? 'esbuild' : false as boolean | 'esbuild' | 'terser' | undefined,
       rollupOptions: {
-        input: {
-          main: resolve(__dirname, 'index.html')
-        },
         output: {
           manualChunks: (id: string) => {
             if (id.includes('node_modules')) {
-              if (id.includes('@mui/') || id.includes('@emotion/')) {
-                return 'vendor_mui';
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+                return 'vendor-react';
               }
-              if (id.includes('@stripe/')) {
-                return 'vendor_stripe';
+              if (id.includes('@chakra-ui') || id.includes('@emotion')) {
+                return 'vendor-chakra';
               }
-              if (id.includes('date-fns')) {
-                return 'vendor_datefns';
+              if (id.includes('@tanstack') || id.includes('@tanstack/')) {
+                return 'vendor-tanstack';
               }
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-                return 'vendor_react';
+              if (id.includes('@stripe')) {
+                return 'vendor-stripe';
               }
-              if (id.includes('@tanstack/')) {
-                return 'vendor_tanstack';
-              }
-              return 'vendor';
+              return 'vendor-other';
             }
-            if (id.includes('src/Pages/dashboards/admin')) {
-              return 'admin';
-            }
-            if (id.includes('src/Pages/dashboards/partner')) {
-              return 'partner';
-            }
-            if (id.includes('src/Pages/dashboards/client')) {
-              return 'client';
-            }
-            if (id.includes('src/components/ui/')) {
-              return 'ui_components';
-            }
+            return undefined;
           },
           chunkFileNames: 'assets/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash][extname]',
         },
       },
+      chunkSizeWarningLimit: 1000,
+      reportCompressedSize: true,
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom'],
@@ -129,6 +105,11 @@ export default defineConfig(({ mode }) => {
         'import.meta.hot': 'undefined',
         'process.env.NODE_ENV': '"production"'
       } : {})
+    },
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url))
+      }
     }
   };
 
