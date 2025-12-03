@@ -111,7 +111,7 @@ try {
   root.render(
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <BrowserRouter>
           <CurrencyProvider>
             <App />
           </CurrencyProvider>

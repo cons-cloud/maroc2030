@@ -1,40 +1,9 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist",
-        "zeroConfig": true
-      }
-    }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ],
+  
   "rewrites": [
-    { 
-      "source": "/dashboard", 
-      "destination": "/dashboard/overview" 
-    },
     { 
       "source": "/(.*)", 
       "destination": "/index.html" 
     }
-  ],
-  "buildCommand": "yarn build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "regions": ["cdg1"],
-  "env": {
-    "NODE_VERSION": "18.x"
-  },
-  "cleanUrls": true,
-  "trailingSlash": false
+  ]
 }
