@@ -7,6 +7,31 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 import App from './App';
 import './index.css';
 
+// Vérifier que le navigateur supporte les fonctionnalités nécessaires
+const isSupported = (() => {
+  try {
+    return (
+      typeof window !== 'undefined' &&
+      'Promise' in window &&
+      'fetch' in window &&
+      typeof createRoot === 'function'
+    );
+  } catch (e) {
+    return false;
+  }
+})();
+
+if (!isSupported) {
+  document.body.innerHTML = `
+    <div style="padding: 2rem; max-width: 800px; margin: 0 auto; font-family: sans-serif;">
+      <h1>Navigateur non supporté</h1>
+      <p>Votre navigateur ne prend pas en charge toutes les fonctionnalités nécessaires pour cette application.</p>
+      <p>Veuillez mettre à jour votre navigateur ou utiliser une version récente de Chrome, Firefox, Safari ou Edge.</p>
+    </div>
+  `;
+  throw new Error('Navigateur non supporté');
+}
+
 // Création du client Query
 const queryClient = new QueryClient({
   defaultOptions: {

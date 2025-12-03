@@ -103,9 +103,10 @@
   <body>
     <div id="root"></div>
     <!-- Chargement des dépendances avant le script principal -->
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx" defer></script>
     <!-- Chargement du CSS de manière synchrone pour éviter les problèmes de FOUC -->
-    <link rel="stylesheet" href="/src/index.css" />
+    <link rel="stylesheet" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="/src/index.css" /></noscript>
     <script>
       // Enregistrement du Service Worker
       if ('serviceWorker' in navigator) {

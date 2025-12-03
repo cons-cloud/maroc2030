@@ -9,13 +9,15 @@ export default defineConfig(({ mode }: ConfigEnv) => {
   // Charger les variables d'environnement
   loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
+  const base = isProduction ? '/' : '/';
   
   const plugins = [
     react({
+      // Configuration minimale de React
+      jsxImportSource: 'react',
       babel: {
         babelrc: false,
         configFile: false,
-        plugins: []
       }
     }),
     tailwindcss(),
@@ -39,7 +41,15 @@ export default defineConfig(({ mode }: ConfigEnv) => {
 
   // Configuration de base
   const config: UserConfig = {
-    base: '/',
+    base: base,
+    define: {
+      'process.env': {},
+      ...(isProduction ? {
+        'import.meta.env.VITE_APP_HMR': 'false',
+        'import.meta.hot': 'undefined',
+        'process.env.NODE_ENV': '"production"'
+      } : {})
+    },
     plugins,
     
     // Configuration du serveur de développement
@@ -97,14 +107,6 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom'],
-    },
-    define: {
-      'process.env': {},
-      ...(isProduction ? {
-        'import.meta.env.VITE_APP_HMR': 'false',
-        'import.meta.hot': 'undefined',
-        'process.env.NODE_ENV': '"production"'
-      } : {})
     },
     resolve: {
       alias: {
