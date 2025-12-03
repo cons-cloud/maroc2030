@@ -55,19 +55,19 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     
     // Configuration du serveur de développement
     server: {
-      port: 3000,
+      port: 4000,
       host: true,
       strictPort: true,
       hmr: !isProduction ? {
         protocol: 'ws',
         host: 'localhost',
-        port: 3000,
+        port: 4000,
       } : false,
     },
     
     // Configuration pour la prévisualisation
     preview: {
-      port: 3000,
+      port: 4000,
       host: true,
       strictPort: true,
     },
