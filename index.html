@@ -39,7 +39,6 @@
     <!-- Preconnect to important origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -49,64 +48,18 @@
     
     <!-- Script pour gérer la direction du texte (RTL/LTR) -->
     <script>
-      // Récupérer la langue sauvegardée ou utiliser le français par défaut
-      const savedLanguage = localStorage.getItem('i18nextLng') || 'fr';
-      // Mettre à jour la langue et la direction du document
-      document.documentElement.lang = savedLanguage;
-      document.documentElement.dir = savedLanguage === 'ar' ? 'rtl' : 'ltr';
-      // Ajouter une classe au body pour la langue actuelle
-      document.documentElement.className = savedLanguage;
-      
-      // Écouter les changements de langue
-      window.addEventListener('languageChanged', (e) => {
-        document.documentElement.lang = e.detail.lng;
-        document.documentElement.dir = e.detail.lng === 'ar' ? 'rtl' : 'ltr';
-        document.documentElement.className = e.detail.lng;
-      });
-    </script>
-
-    <!-- CSS critique (inlined) -->
-    <style>
-      /* Styles critiques minimaux pour le chargement initial */
-      body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-      #root { display: flex; flex-direction: column; min-height: 100vh; }
-      /* Ajoutez ici d'autres styles critiques si nécessaire */
-    </style>
-    
-    <!-- Chargement différé du CSS non critique -->
-    <link 
-      rel="preload" 
-      href="assets/index.css" 
-      as="style" 
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript><link rel="stylesheet" href="assets/index.css" /></noscript>
-    <script>
-      // Script de secours si le chargement échoue
-      const loadCSS = function(href, before, media) {
-        const ss = window.document.createElement('link');
-        ss.rel = 'stylesheet';
-        ss.href = href;
-        ss.media = 'only x';
-        if (before) document.head.insertBefore(ss, before);
-        else document.head.appendChild(ss);
-        setTimeout(function() { ss.media = media || 'all'; });
-        return ss;
-      };
-      
-      // Chargement asynchrone du CSS de secours
-      // Le CSS principal est maintenant chargé de manière synchrone
+      // Détection de la langue et application de la direction
+      document.documentElement.dir = document.documentElement.lang === 'ar' ? 'rtl' : 'ltr';
     </script>
 
     <title>Maroc 2030 - Votre guide de voyage au Maroc</title>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Chargement des dépendances avant le script principal -->
-    <script type="module" src="/src/main.tsx" defer></script>
-    <!-- Chargement du CSS de manière synchrone pour éviter les problèmes de FOUC -->
-    <link rel="stylesheet" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="/src/index.css" /></noscript>
+    
+    <!-- Point d'entrée de l'application -->
+    <script type="module" src="/src/main.tsx"></script>
+    
     <script>
       // Enregistrement du Service Worker
       if ('serviceWorker' in navigator) {
@@ -120,16 +73,6 @@
             });
         });
       }
-
-      // Préchargement des ressources critiques
-      const preloadImages = [];
-      preloadImages.forEach(src => {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = src;
-        document.head.appendChild(link);
-      });
     </script>
   </body>
 </html>
