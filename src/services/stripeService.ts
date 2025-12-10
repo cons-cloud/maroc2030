@@ -83,7 +83,7 @@ class StripeService {
       throw new Error('Clé secrète Stripe non configurée');
     }
     return new Stripe(import.meta.env.VITE_STRIPE_SECRET_KEY, {
-      apiVersion: '2025-10-29.clover',
+      apiVersion: '2025-11-17.clover',
     });
   }
 
