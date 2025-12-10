@@ -8,6 +8,7 @@ import MagicLink from "./Pages/Auth/MagicLink";
 import Reauthenticate from "./Pages/Auth/Reauthenticate";
 import UpdateEmail from "./Pages/Auth/UpdateEmail";
 import InviteUser from "./Pages/Auth/InviteUser";
+import TestPayment from "./Pages/TestPayment";
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from "./contexts/AuthContext";
 import Callback from './Pages/Auth/Callback';
@@ -216,6 +217,9 @@ function App() {
                   <Route path={ROUTES.CONTACT} element={<Contact />} />
                   <Route path={ROUTES.SEARCH} element={<Recherche />} />
                   
+                  {/* Route de test de paiement */}
+                  <Route path="/test-payment" element={<TestPayment />} />
+                  
                   {/* Routes de paiement */}
                   <Route path=":type/:id/reserver" element={<ServiceReservation />} />
                   <Route path={ROUTES.PAYMENT} element={<Payment />} />
@@ -314,8 +318,8 @@ function App() {
                 }>
                   <Route index element={<PartnerDashboard />} />
                   <Route path="evenements" element={<PartnerEvents />} />
-                  <Route path="annonces" element={<PartnerAnnonces />} />
-                  <Route path="profil" element={<PartnerProfile />} />
+                  <Route path="payment/success" element={<PaymentSuccess />} />
+                  <Route path="recherche" element={<Recherche />} />
                   <Route path="parametres" element={<PartnerSettings />} />
                   
                   {/* Page 404 pour le partenaire */}
